@@ -3,7 +3,6 @@ import Dashboard from './pages/Dashboard';
 import Tables from './pages/Tables';
 import Profile from './pages/Profile';
 import SignIn from './pages/SignIn';
-import SignUp from './pages/SignUp';
 import UserManagement from './pages/UserManagement';
 
 function App() {
@@ -16,7 +15,6 @@ function App() {
       case 'profile': return <Profile />;
       case 'users': return <UserManagement />;
       case 'signin': return <SignIn />;
-      case 'signup': return <SignUp />;
       default: return <Dashboard />;
     }
   };
@@ -61,13 +59,6 @@ function App() {
             style={{ backgroundColor: currentPage === 'signin' ? '#E3F2FD' : 'transparent', color: currentPage === 'signin' ? '#0066CC' : '#666' }}
           >
             🔐 Sign In
-          </button>
-          <button 
-            onClick={() => setCurrentPage('signup')} 
-            className="block w-full text-left px-3 py-2 rounded-lg hover:bg-blue-50 text-sm font-medium"
-            style={{ backgroundColor: currentPage === 'signup' ? '#E3F2FD' : 'transparent', color: currentPage === 'signup' ? '#0066CC' : '#666' }}
-          >
-            ✍️ Sign Up
           </button>
         </div>
       </div>

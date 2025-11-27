@@ -1,197 +1,111 @@
-# GenericLab CAPA Management
+# Genericlab-CAPA-Management
 
-Application web moderne de gestion des CAPA (Corrective and Preventive Actions) pour les laboratoires pharmaceutiques et de santé.
+Application web de gestion des CAPA (Corrective and Preventive Actions) pour les laboratoires pharmaceutiques et de santé.
 
-## 🚀 Architecture
+## 🚀 Demo en ligne
 
-Ce projet utilise une architecture moderne séparée en deux parties :
+**[Voir l'application déployée](https://genericlab-capa-management.vercel.app/)**
 
-- **Frontend** : Nuxt.js 4 (Vue 3) avec Tailwind CSS
-- **Backend** : Express.js (API REST)
+## Description
 
-## 📁 Structure du projet
+GenericLab CAPA est une application de gestion complète permettant le suivi et la gestion des actions correctives et préventives dans un environnement de laboratoire. Elle offre des tableaux de bord interactifs, des outils de gestion des utilisateurs, et un suivi détaillé des CAPA avec reporting intégré.
 
-\`\`\`
-genericlab-capa/
-├── frontend/               # Application Nuxt.js
-│   ├── assets/            # CSS et ressources statiques
-│   ├── components/        # Composants Vue réutilisables
-│   ├── composables/       # Composables Vue (useApi, etc.)
-│   ├── middleware/        # Middleware de route (auth)
-│   ├── pages/             # Pages de l'application (routing auto)
-│   ├── public/            # Fichiers statiques publics
-│   ├── app.vue            # Composant racine
-│   ├── nuxt.config.ts     # Configuration Nuxt
-│   └── package.json
-│
-├── backend/               # API Express.js
-│   ├── controllers/       # Contrôleurs (logique métier)
-│   ├── routes/            # Définition des routes API
-│   ├── models/            # Modèles de données
-│   ├── middleware/        # Middleware Express
-│   ├── server.js          # Point d'entrée du serveur
-│   └── package.json
-│
-└── README.md
-\`\`\`
+## Fonctionnalités
 
-## 🔧 Installation
+- **Tableau de bord interactif** : Vue d'ensemble des CAPA actives, en attente et clôturées avec statistiques en temps réel
+- **Gestion des CAPA** : Création, modification et suivi des actions correctives et préventives
+- **Gestion des utilisateurs** : Administration des utilisateurs et des rôles
+- **Profil utilisateur** : Gestion des informations personnelles et préférences
+- **Authentification** : Système de connexion et d'inscription sécurisé
+- **Rapports et analytics** : Visualisation des données avec graphiques et métriques de performance
+- **Interface responsive** : Design adapté à tous les écrans
 
-### Prérequis
+## Technologies utilisées
 
-- Node.js v20.19.0 ou supérieur
+- **React 19** : Framework JavaScript pour l'interface utilisateur
+- **Tailwind CSS** : Framework CSS pour le styling
+- **Lucide React** : Bibliothèque d'icônes
+- **Recharts** : Bibliothèque de graphiques pour les visualisations de données
+- **React Scripts** : Outils de build et développement
+
+## Prérequis
+
+- Node.js (version 14 ou supérieure)
 - npm ou yarn
 
-### Installation du Frontend
+## Installation
 
+1. Cloner le repository :
 \`\`\`bash
-cd frontend
+git clone <url-du-repository>
+cd genericlab-capa
+\`\`\`
+
+2. Installer les dépendances :
+\`\`\`bash
 npm install
 \`\`\`
 
-### Installation du Backend
-
+3. Démarrer l'application en mode développement :
 \`\`\`bash
-cd backend
-npm install
-\`\`\`
-
-## 🚀 Démarrage
-
-### Démarrer le Backend (API)
-
-\`\`\`bash
-cd backend
-npm run dev
-\`\`\`
-
-Le serveur API sera accessible sur [http://localhost:3001](http://localhost:3001)
-
-### Démarrer le Frontend
-
-\`\`\`bash
-cd frontend
-npm run dev
-\`\`\`
-
-L'application frontend sera accessible sur [http://localhost:3000](http://localhost:3000)
-
-## 📡 API Endpoints
-
-### Authentification
-- \`POST /api/auth/login\` - Connexion
-- \`POST /api/auth/logout\` - Déconnexion
-- \`GET /api/auth/profile\` - Profil utilisateur
-
-### CAPA
-- \`GET /api/capa\` - Liste toutes les CAPA
-- \`GET /api/capa/:id\` - Détails d'une CAPA
-- \`POST /api/capa\` - Créer une CAPA
-- \`PUT /api/capa/:id\` - Mettre à jour une CAPA
-- \`DELETE /api/capa/:id\` - Supprimer une CAPA
-- \`GET /api/capa/status/:status\` - CAPA par statut
-
-### Utilisateurs
-- \`GET /api/users\` - Liste tous les utilisateurs
-- \`GET /api/users/:id\` - Détails d'un utilisateur
-- \`POST /api/users\` - Créer un utilisateur
-- \`PUT /api/users/:id\` - Mettre à jour un utilisateur
-- \`DELETE /api/users/:id\` - Supprimer un utilisateur
-
-### Statistiques
-- \`GET /api/stats/dashboard\` - Statistiques du dashboard
-- \`GET /api/stats/period/:period\` - Statistiques par période
-
-## 🎨 Technologies utilisées
-
-### Frontend
-- **Nuxt.js 4** - Framework Vue.js pour applications web
-- **Vue 3** - Framework JavaScript progressif
-- **Tailwind CSS** - Framework CSS utility-first
-- **Lucide Vue Next** - Bibliothèque d'icônes
-- **TypeScript** - Support TypeScript
-
-### Backend
-- **Express.js** - Framework web Node.js
-- **CORS** - Gestion des requêtes cross-origin
-- **dotenv** - Gestion des variables d'environnement
-- **Nodemon** - Rechargement automatique en développement
-
-## 🔐 Authentification
-
-Pour vous connecter en mode démo, utilisez l'un de ces comptes :
-
-- **Admin** : marie.dupont@genericlab.com
-- **User** : jean.martin@genericlab.com
-- **User** : sophie.bernard@genericlab.com
-
-Mot de passe : n'importe quel mot de passe (en mode démo)
-
-## 📝 Variables d'environnement
-
-### Frontend (.env)
-\`\`\`env
-NUXT_PUBLIC_API_BASE=http://localhost:3001/api
-\`\`\`
-
-### Backend (.env)
-\`\`\`env
-PORT=3001
-NODE_ENV=development
-FRONTEND_URL=http://localhost:3000
-\`\`\`
-
-## 🌟 Fonctionnalités
-
-- ✅ **Dashboard interactif** - Vue d'ensemble avec statistiques en temps réel
-- ✅ **Gestion des CAPA** - Création, modification, suppression des actions
-- ✅ **Gestion des utilisateurs** - Administration des comptes
-- ✅ **Authentification** - Système de connexion sécurisé
-- ✅ **API REST** - Backend découplé avec Express.js
-- ✅ **Interface moderne** - Design responsive avec Tailwind CSS
-- ✅ **Navigation fluide** - Routing automatique avec Nuxt
-
-## 🛠️ Scripts disponibles
-
-### Frontend
-\`\`\`bash
-npm run dev      # Démarrage en mode développement
-npm run build    # Build pour la production
-npm run generate # Génération statique
-npm run preview  # Preview du build de production
-\`\`\`
-
-### Backend
-\`\`\`bash
-npm run dev      # Démarrage avec nodemon
-npm start        # Démarrage en production
-\`\`\`
-
-## 📦 Déploiement
-
-### Frontend (Vercel)
-Le frontend peut être déployé sur Vercel :
-\`\`\`bash
-cd frontend
-npm run build
-\`\`\`
-
-### Backend (Heroku, Railway, etc.)
-Le backend peut être déployé sur n'importe quel service supportant Node.js :
-\`\`\`bash
-cd backend
 npm start
 \`\`\`
 
-## 🔜 Prochaines étapes
+L'application sera accessible à l'adresse [http://localhost:3000](http://localhost:3000)
 
-- [ ] Intégration d'une vraie base de données (PostgreSQL/MongoDB)
-- [ ] Authentification JWT complète
-- [ ] Gestion des rôles et permissions
-- [ ] Upload de fichiers pour les CAPA
-- [ ] Notifications en temps réel
-- [ ] Export de rapports (PDF, Excel)
-- [ ] Tests unitaires et d'intégration
+## Scripts disponibles
+
+### \`npm start\`
+
+Lance l'application en mode développement.
+Ouvre [http://localhost:3000](http://localhost:3000) dans votre navigateur.
+
+La page se rechargera automatiquement lors des modifications.
+
+### \`npm test\`
+
+Lance le runner de tests en mode interactif.
+
+### \`npm run build\`
+
+Crée une version optimisée de l'application pour la production dans le dossier \`build\`.
+
+L'application est minifiée et prête pour le déploiement.
+
+### \`npm run eject\`
+
+**Note : cette opération est irréversible !**
+
+Si vous n'êtes pas satisfait des outils de build, vous pouvez utiliser \`eject\` pour avoir un contrôle total sur la configuration.
+
+## Structure du projet
+
+\`\`\`
+genericlab-capa/
+├── public/           # Fichiers statiques
+├── src/
+│   ├── components/   # Composants réutilisables
+│   │   └── Logo.jsx
+│   ├── pages/        # Pages de l'application
+│   │   ├── Dashboard.jsx
+│   │   ├── Tables.jsx
+│   │   ├── Profile.jsx
+│   │   ├── SignIn.jsx
+│   │   ├── SignUp.jsx
+│   │   └── UserManagement.jsx
+│   ├── App.js        # Composant racine
+│   └── index.js      # Point d'entrée
+├── package.json
+└── README.md
+\`\`\`
+
+## Pages principales
+
+- **Dashboard** : Tableau de bord avec statistiques et CAPA récentes
+- **Gestion de CAPA** : Liste et gestion des actions correctives et préventives
+- **Profile** : Page de profil utilisateur
+- **Utilisateurs** : Gestion des utilisateurs (admin)
+- **Sign In / Sign Up** : Pages d'authentification
 
 ## Contribution
 

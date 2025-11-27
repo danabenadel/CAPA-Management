@@ -36,20 +36,20 @@ GenericLab CAPA est une application de gestion complète permettant le suivi et 
 ## Installation
 
 1. Cloner le repository :
-\`\`\`bash
+```bash
 git clone <url-du-repository>
 cd genericlab-capa
-\`\`\`
+```
 
 2. Installer les dépendances :
-\`\`\`bash
+```bash
 npm install
-\`\`\`
+```
 
 3. Démarrer l'application en mode développement :
-\`\`\`bash
+```bash
 npm start
-\`\`\`
+```
 
 L'application sera accessible à l'adresse [http://localhost:3000](http://localhost:3000)
 
@@ -80,7 +80,7 @@ Si vous n'êtes pas satisfait des outils de build, vous pouvez utiliser \`eject\
 
 ## Structure du projet
 
-\`\`\`
+```
 genericlab-capa/
 ├── public/           # Fichiers statiques
 ├── src/
@@ -97,7 +97,7 @@ genericlab-capa/
 │   └── index.js      # Point d'entrée
 ├── package.json
 └── README.md
-\`\`\`
+```
 
 ## Pages principales
 

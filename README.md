@@ -1,4 +1,4 @@
-# Genericlab-CAPA-Management
+# CAPA-Management
 
 Application web de gestion des CAPA (Corrective and Preventive Actions) pour les laboratoires pharmaceutiques et de santé.
 
@@ -8,7 +8,7 @@ Application web de gestion des CAPA (Corrective and Preventive Actions) pour les
 
 ## Description
 
-GenericLab CAPA est une application de gestion complète permettant le suivi et la gestion des actions correctives et préventives dans un environnement de laboratoire. Elle offre des tableaux de bord interactifs, des outils de gestion des utilisateurs, et un suivi détaillé des CAPA avec reporting intégré.
+CAPA Management est une application de gestion complète permettant le suivi et la gestion des actions correctives et préventives dans un environnement de laboratoire. Elle offre des tableaux de bord interactifs, des outils de gestion des utilisateurs, et un suivi détaillé des CAPA avec reporting intégré.
 
 ## Fonctionnalités
 

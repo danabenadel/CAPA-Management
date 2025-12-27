@@ -38,7 +38,7 @@ CAPA Management est une application de gestion complète permettant le suivi et 
 1. Cloner le repository :
 ```bash
 git clone <url-du-repository>
-cd genericlab-capa
+cd capa-managment
 ```
 
 2. Installer les dépendances :

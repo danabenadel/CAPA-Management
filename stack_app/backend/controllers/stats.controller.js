@@ -1,51 +1,94 @@
-import { capas } from '../models/data.js';
+import prisma from '../config/prisma.js';
 
 export const statsController = {
   // GET statistiques du dashboard
-  getDashboard: (req, res) => {
+  getDashboard: async (req, res) => {
     try {
-      const stats = {
-        totalCapas: capas.length,
-        ouvertes: capas.filter(c => c.statut === 'Ouverte').length,
-        enCours: capas.filter(c => c.statut === 'En cours').length,
-        cloturees: capas.filter(c => c.statut === 'Clôturée').length,
-        correctives: capas.filter(c => c.type === 'Corrective').length,
-        preventives: capas.filter(c => c.type === 'Préventive').length,
-        prioriteHaute: capas.filter(c => c.priorite === 'Haute').length,
-        prioriteMoyenne: capas.filter(c => c.priorite === 'Moyenne').length,
-        prioriteBasse: capas.filter(c => c.priorite === 'Basse').length,
+      // 1. KPI Globaux
+      const totalCapas = await prisma.capa.count();
+      const ouvertes = await prisma.capa.count({ where: { status: 'CREE' } });
+      const enCours = await prisma.capa.count({ where: { status: 'EN_COURS' } });
+      const cloturees = await prisma.capa.count({ where: { status: 'CLOTURE' } });
+
+      // 2. Par Departement (Utilisateurs initiateurs)
+      const allCapas = await prisma.capa.findMany({
+        include: {
+          initiator: {
+            include: { department: true }
+          }
+        }
+      });
+
+      const deptCounts = {};
+      allCapas.forEach(c => {
+        const deptName = c.initiator?.department?.departmentName || 'Non défini';
+        deptCounts[deptName] = (deptCounts[deptName] || 0) + 1;
+      });
+
+      const capaParDepartement = Object.entries(deptCounts).map(([departement, nombre]) => ({ departement, nombre }));
+
+      const correctives = await prisma.capaAction.count({ where: { actionType: 'CORRECTIVE' } });
+      const preventives = await prisma.capaAction.count({ where: { actionType: 'PREVENTIVE' } });
+
+      // 3. Graphique par Mois (Current Year)
+      const currentYear = new Date().getFullYear();
+      const capasThisYear = await prisma.capa.findMany({
+        where: {
+          initiationDate: {
+            gte: new Date(currentYear, 0, 1),
+            lt: new Date(currentYear + 1, 0, 1)
+          }
+        },
+        select: { initiationDate: true }
+      });
+
+      const capaParMois = {};
+      const moisLabels = ['janvier', 'fevrier', 'mars', 'avril', 'mai', 'juin', 'juillet', 'aout', 'septembre', 'octobre', 'novembre', 'decembre'];
+      moisLabels.forEach(m => capaParMois[m] = 0);
+
+      capasThisYear.forEach(c => {
+        const month = c.initiationDate.getMonth();
+        capaParMois[moisLabels[month]]++;
+      });
+
+      // 4. CAPA Récentes (Last 5)
+      const recentDbCapas = await prisma.capa.findMany({
+        take: 5,
+        orderBy: { initiationDate: 'desc' },
+        include: {
+          initiator: true
+        }
+      });
+
+      const mapStatus = (status) => {
+        if (status === 'CREE') return 'Ouverte';
+        if (status === 'CLOTURE') return 'Clôturée';
+        return 'En cours';
       };
 
-      // Données pour les graphiques
-      const capaParMois = {
-        janvier: 5,
-        fevrier: 8,
-        mars: 12,
-        avril: 7,
-        mai: 10,
-        juin: 9,
-        juillet: 11,
-        aout: 6,
-        septembre: 13,
-        octobre: 8,
-        novembre: 15,
-        decembre: 10
-      };
-
-      const capaParDepartement = [
-        { departement: 'Qualité', count: 25 },
-        { departement: 'Production', count: 35 },
-        { departement: 'Laboratoire', count: 20 },
-        { departement: 'Maintenance', count: 15 },
-      ];
+      const capasRecentes = recentDbCapas.map(c => ({
+        id: c.id,
+        titre: c.capaNumber,
+        type: 'Qualité Systémique', // Mock type
+        statut: mapStatus(c.status),
+        priorite: ['Haute', 'Moyenne', 'Basse'][Math.floor(Math.random() * 3)], // Mock priority
+        responsable: `${c.initiator?.firstName || ''} ${c.initiator?.lastName || ''}`.trim() || c.initiator?.username
+      }));
 
       res.json({
         success: true,
         data: {
-          stats,
+          stats: {
+            totalCapas,
+            ouvertes,
+            enCours,
+            cloturees,
+            correctives,
+            preventives
+          },
           capaParMois,
           capaParDepartement,
-          capasRecentes: capas.slice(0, 5)
+          capasRecentes
         }
       });
     } catch (error) {
@@ -55,22 +98,7 @@ export const statsController = {
 
   // GET statistiques par période
   getByPeriod: (req, res) => {
-    try {
-      const { period } = req.params;
-
-      // Simulation de données par période
-      const data = {
-        week: { total: 5, new: 2, closed: 1 },
-        month: { total: 15, new: 8, closed: 5 },
-        year: { total: 120, new: 45, closed: 38 }
-      };
-
-      res.json({
-        success: true,
-        data: data[period] || data.month
-      });
-    } catch (error) {
-      res.status(500).json({ success: false, error: error.message });
-    }
+    // Placeholder - to be implemented with real date filters
+    res.json({ success: true, message: "Endpoint en construction" });
   }
 };

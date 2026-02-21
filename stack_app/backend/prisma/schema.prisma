@@ -1,0 +1,828 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// ENUMS
+// -----------------------------------------------------------------------------
+
+enum EventTiming {
+  JOUR
+  NUIT
+  MOMENT_JOURNEE
+  APRES_REPOS
+  CHANGEMENT_EQUIPE
+  INTERVENTION_MAINTENANCE
+}
+
+enum EventStatus {
+  CREE
+  EN_EVALUATION
+  CLASSE_ANOMALIE
+  CLASSE_DEVIATION
+  CLOTURE
+}
+
+enum ActionStatus {
+  EN_ATTENTE
+  EN_COURS
+  TERMINEE
+  EN_RETARD
+}
+
+enum DeviationClassification {
+  CRITIQUE
+  MAJEURE
+  MINEURE
+}
+
+enum EvaluationStatus {
+  EN_ATTENTE
+  EVALUE
+  CLOTURE
+}
+
+enum InvestigationStatus {
+  EN_COURS
+  TERMINEE
+}
+
+enum IshikawaCategory {
+  MAIN_D_OEUVRE
+  MATIERE
+  MANAGEMENT
+  METHODE
+  MATERIEL
+  MILIEU
+}
+
+// enum CauseCategory removed
+
+enum SolutionStatus {
+  PLANIFIEE
+  EN_COURS
+  TERMINEE
+}
+
+enum RiskStatus {
+  EN_COURS
+  VERIFIE
+  APPROUVE
+}
+
+enum CriticalityLevel {
+  ACCEPTABLE
+  INDESIRABLE
+  INACCEPTABLE
+}
+
+enum CapaStatus {
+  CREE
+  EN_COURS
+  EN_ATTENTE_EFFICACITE
+  EFFICACE
+  NON_EFFICACE
+  CLOTURE
+  ETENDU
+}
+
+enum CapaActionType {
+  CORRECTIVE
+  PREVENTIVE
+}
+
+enum CapaActionStatus {
+  PLANIFIEE
+  EN_COURS
+  TERMINEE
+  EN_RETARD
+  VALIDEE
+}
+
+enum ApprovalStatus {
+  EN_ATTENTE
+  APPROUVE
+  REJETE
+}
+
+enum EffectivenessStatus {
+  EN_ATTENTE
+  EN_VERIFICATION
+  EN_VALIDATION
+  APPROUVE
+}
+
+enum DocumentCategory {
+  EVIDENCE
+  REPORT
+  PHOTO
+  OTHER
+}
+
+enum EntityType {
+  QUALITY_EVENT
+  CAPA
+  INVESTIGATION
+  RISK_ANALYSIS
+  ACTION
+}
+
+enum NotificationPriority {
+  BASSE
+  NORMALE
+  HAUTE
+  URGENTE
+}
+
+// -----------------------------------------------------------------------------
+// TABLES UTILISATEURS ET PERMISSIONS
+// -----------------------------------------------------------------------------
+
+model User {
+  id           Int      @id @default(autoincrement()) @map("user_id")
+  username     String   @unique @db.VarChar(100)
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  firstName    String?  @map("first_name") @db.VarChar(100)
+  lastName     String?  @map("last_name") @db.VarChar(100)
+  roleId       Int?     @map("role_id")
+  departmentId Int?     @map("department_id")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  role       Role?       @relation(fields: [roleId], references: [id])
+  department Department? @relation(fields: [departmentId], references: [id])
+
+  // Inverse Relations (Managed/Reported/Assigned)
+  managedDepartments Department[] @relation("DepartmentManager")
+
+  reportedEvents QualityEvent[] @relation("Reporter")
+
+  immediateActionsResponsible ImmediateAction[] @relation("ImmediateActionResponsible")
+  immediateActionsStructure   ImmediateAction[] @relation("ImmediateActionStructureManager")
+  immediateActionsValidated   ImmediateAction[] @relation("ImmediateActionValidator")
+
+  evaluations InitialEvaluation[] @relation("Evaluator")
+
+  investigations PreliminaryInvestigation[] @relation("Investigator")
+
+  capaSolutions ProblemSolution[]
+
+  riskActionsResponsible RiskAnalysis[] @relation("RiskActionResponsible")
+  riskVerifiers          RiskAnalysis[] @relation("RiskVerifier")
+  riskApprovers          RiskAnalysis[] @relation("RiskApprover")
+
+  capasInitiated Capa[] @relation("CapaInitiator")
+  capasApproved  Capa[] @relation("CapaApprover")
+  capasClosed    Capa[] @relation("CapaCloser")
+
+  capaActionsResponsible CapaAction[] @relation("CapaActionResponsible")
+  capaActionsValidated   CapaAction[] @relation("CapaActionValidator")
+
+  capaExtensionsRequested CapaExtension[] @relation("ExtensionRequester")
+  capaExtensionsApproved  CapaExtension[] @relation("ExtensionApprover")
+
+  effectivenessVerifier    CapaEffectiveness[] @relation("EffectivenessVerifier")
+  effectivenessResponsible CapaEffectiveness[] @relation("EffectivenessResponsible")
+  effectivenessSmq         CapaEffectiveness[] @relation("EffectivenessSmq")
+
+  documentsUploaded Document[] @relation("Uploader")
+  documentsDeleted  Document[] @relation("Deleter")
+
+  notifications Notification[]
+  auditLogs     AuditLog[]
+
+  @@index([username], name: "idx_username")
+  @@index([email], name: "idx_email")
+  @@index([roleId], name: "idx_role")
+  @@index([departmentId], name: "idx_department")
+  @@map("users")
+}
+
+model Role {
+  id          Int      @id @default(autoincrement()) @map("role_id")
+  roleName    String   @unique @map("role_name") @db.VarChar(100)
+  roleCode    String?  @unique @map("role_code") @db.VarChar(50)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  users           User[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Department {
+  id             Int      @id @default(autoincrement()) @map("department_id")
+  departmentName String   @map("department_name") @db.VarChar(200)
+  departmentCode String?  @unique @map("department_code") @db.VarChar(50)
+  managerUserId  Int?     @map("manager_user_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  manager User?  @relation("DepartmentManager", fields: [managerUserId], references: [id])
+  users   User[]
+
+  @@index([departmentCode], name: "idx_dept_code")
+  @@map("departments")
+}
+
+model Permission {
+  id             Int      @id @default(autoincrement()) @map("permission_id")
+  permissionName String   @unique @map("permission_name") @db.VarChar(100)
+  permissionCode String   @unique @map("permission_code") @db.VarChar(50)
+  description    String?  @db.Text
+  module         String?  @db.VarChar(50)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  rolePermissions RolePermission[]
+
+  @@index([module], name: "idx_module")
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       Int @map("role_id")
+  permissionId Int @map("permission_id")
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// -----------------------------------------------------------------------------
+// TABLES ÉVÉNEMENTS QUALITÉ
+// -----------------------------------------------------------------------------
+
+model QualityEvent {
+  id            Int       @id @default(autoincrement()) @map("event_id")
+  eventNumber   String    @unique @map("event_number") @db.VarChar(50)
+  eventDate     DateTime  @map("event_date") @db.Date
+  detectionTime DateTime? @map("detection_time") @db.Time
+
+  reporterUserId Int     @map("reporter_user_id")
+  reporterRole   String? @map("reporter_role") @db.VarChar(100)
+
+  // Description
+  problemDescription     String  @map("problem_description") @db.Text
+  problemLocation        String? @map("problem_location") @db.VarChar(255)
+  affectedProcess        String? @map("affected_process") @db.VarChar(255)
+  affectedProduct        String? @map("affected_product") @db.VarChar(255)
+  affectedLot            String? @map("affected_lot") @db.VarChar(100)
+  quantityConcerned      String? @map("quantity_concerned") @db.VarChar(100)
+  boxNumber              String? @map("box_number") @db.VarChar(100)
+  materialConcerned      String? @map("material_concerned") @db.VarChar(255)
+  lotNumber              String? @map("lot_number") @db.VarChar(100)
+  controlNumber          String? @map("control_number") @db.VarChar(100)
+  equipment              String? @db.VarChar(255)
+  specification          String? @db.Text
+  characteristicsChanged String? @map("characteristics_changed") @db.Text
+
+  // Context
+  teamCausingGap   String?      @map("team_causing_gap") @db.VarChar(255)
+  anomalyTiming    EventTiming? @map("anomaly_timing")
+  physicalLocation String?      @map("physical_location") @db.VarChar(255)
+  detectionMethod  String?      @map("detection_method") @db.Text
+
+  status EventStatus @default(CREE)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  closedAt  DateTime? @map("closed_at")
+
+  // Relations
+  reporter User @relation("Reporter", fields: [reporterUserId], references: [id])
+
+  immediateActions         ImmediateAction[]
+  initialEvaluation        InitialEvaluation?
+  preliminaryInvestigation PreliminaryInvestigation?
+  riskAnalysis             RiskAnalysis?
+  capa                     Capa?
+
+  @@index([eventNumber], name: "idx_event_number")
+  @@index([status], name: "idx_event_status")
+  @@index([eventDate], name: "idx_event_date")
+  @@index([reporterUserId], name: "idx_reporter")
+  @@map("quality_events")
+}
+
+model ImmediateAction {
+  id      Int @id @default(autoincrement()) @map("action_id")
+  eventId Int @map("event_id")
+
+  actionDescription String   @map("action_description") @db.Text
+  deadline          DateTime
+  evidence          String?  @db.Text
+
+  responsibleUserId          Int  @map("responsible_user_id")
+  structureResponsibleUserId Int? @map("structure_responsible_user_id")
+
+  status          ActionStatus @default(EN_ATTENTE)
+  completionDate  DateTime?    @map("completion_date")
+  completionNotes String?      @map("completion_notes") @db.Text
+
+  validatedByUserId Int?      @map("validated_by_user_id")
+  validatedAt       DateTime? @map("validated_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  qualityEvent         QualityEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  responsibleUser      User         @relation("ImmediateActionResponsible", fields: [responsibleUserId], references: [id])
+  structureResponsible User?        @relation("ImmediateActionStructureManager", fields: [structureResponsibleUserId], references: [id])
+  validator            User?        @relation("ImmediateActionValidator", fields: [validatedByUserId], references: [id])
+
+  @@index([eventId], name: "idx_ia_event")
+  @@index([responsibleUserId], name: "idx_ia_responsible")
+  @@index([status], name: "idx_ia_status")
+  @@map("immediate_actions")
+}
+
+model InitialEvaluation {
+  id      Int @id @default(autoincrement()) @map("evaluation_id")
+  eventId Int @unique @map("event_id")
+
+  isAnomaly         Boolean? @map("is_anomaly")
+  isDeviation       Boolean? @map("is_deviation")
+  evaluationComment String?  @map("evaluation_comment") @db.Text
+
+  deviationClassification   DeviationClassification? @map("deviation_classification")
+  investigationReportNumber String?                  @map("investigation_report_number") @db.VarChar(100)
+  capaNumber                String?                  @map("capa_number") @db.VarChar(100)
+
+  evaluatorUserId Int       @map("evaluator_user_id")
+  receptionDate   DateTime? @map("reception_date") @db.Date
+  evaluationDate  DateTime? @map("evaluation_date") @db.Date
+  closureDate     DateTime? @map("closure_date") @db.Date
+
+  status EvaluationStatus @default(EN_ATTENTE)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  qualityEvent QualityEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  evaluator    User         @relation("Evaluator", fields: [evaluatorUserId], references: [id])
+
+  @@index([status], name: "idx_eval_status")
+  @@map("initial_evaluations")
+}
+
+// -----------------------------------------------------------------------------
+// TABLES INVESTIGATION
+// -----------------------------------------------------------------------------
+
+model PreliminaryInvestigation {
+  id      Int @id @default(autoincrement()) @map("investigation_id")
+  eventId Int @unique @map("event_id")
+
+  whatProblem  String? @map("what_problem") @db.Text
+  whereProblem String? @map("where_problem") @db.Text
+  whenProblem  String? @map("when_problem") @db.Text
+  whoProblem   String? @map("who_problem") @db.Text
+
+  factsStatement String? @map("facts_statement") @db.Text
+
+  isConclusive              Boolean? @map("is_conclusive")
+  requiresDeepInvestigation Boolean  @default(false) @map("requires_deep_investigation")
+
+  investigatorUserId Int @map("investigator_user_id")
+
+  status         InvestigationStatus @default(EN_COURS)
+  completionDate DateTime?           @map("completion_date") @db.Date
+
+  actionsCompleted    Boolean @default(false) @map("actions_completed")
+  impactMeasured      Boolean @default(false) @map("impact_measured")
+  problemCorrected    Boolean @default(false) @map("problem_corrected")
+  recurrenceAvoided   Boolean @default(false) @map("recurrence_avoided")
+  newNormCreated      Boolean @default(false) @map("new_norm_created")
+  currentNormImproved Boolean @default(false) @map("current_norm_improved")
+  trainingRequired    Boolean @default(false) @map("training_required")
+
+  evaluatorName      String?   @map("evaluator_name") @db.VarChar(255)
+  evaluationDate     DateTime? @map("evaluation_date") @db.Date
+  evaluationNotation String?   @map("evaluation_notation") @db.Text
+  isTerminated       Boolean   @default(false) @map("is_terminated")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  qualityEvent QualityEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  investigator User         @relation("Investigator", fields: [investigatorUserId], references: [id])
+
+  ishikawaAnalysis IshikawaAnalysis[]
+  identifiedCauses IdentifiedCause[]
+  problemSolutions ProblemSolution[]
+
+  @@index([investigatorUserId], name: "idx_inv_investigator")
+  @@index([status], name: "idx_inv_status")
+  @@map("preliminary_investigations")
+}
+
+model IshikawaAnalysis {
+  id              Int @id @default(autoincrement()) @map("analysis_id")
+  investigationId Int @map("investigation_id")
+
+  category         IshikawaCategory
+  causeDescription String           @map("cause_description") @db.Text
+  sequenceOrder    Int?             @map("sequence_order")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  investigation PreliminaryInvestigation @relation(fields: [investigationId], references: [id], onDelete: Cascade)
+
+  @@index([investigationId], name: "idx_ishi_inv")
+  @@map("ishikawa_analysis")
+}
+
+model IdentifiedCause {
+  id              Int @id @default(autoincrement()) @map("cause_id")
+  investigationId Int @map("investigation_id")
+
+  category         IshikawaCategory
+  causeDescription String           @map("cause_description") @db.Text
+  sequenceNumber   Int?             @map("sequence_number")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  investigation PreliminaryInvestigation @relation(fields: [investigationId], references: [id], onDelete: Cascade)
+
+  @@index([investigationId], name: "idx_cause_inv")
+  @@map("identified_causes")
+}
+
+model ProblemSolution {
+  id              Int @id @default(autoincrement()) @map("solution_id")
+  investigationId Int @map("investigation_id")
+
+  actionDescription String    @map("action_description") @db.Text
+  responsibleUserId Int?      @map("responsible_user_id")
+  deadline          DateTime? @db.Date
+
+  status         SolutionStatus @default(PLANIFIEE)
+  completionDate DateTime?      @map("completion_date") @db.Date
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  investigation PreliminaryInvestigation @relation(fields: [investigationId], references: [id], onDelete: Cascade)
+  responsible   User?                    @relation(fields: [responsibleUserId], references: [id])
+
+  @@index([investigationId], name: "idx_sol_inv")
+  @@index([responsibleUserId], name: "idx_sol_resp")
+  @@map("problem_solutions")
+}
+
+// -----------------------------------------------------------------------------
+// TABLES ANALYSE DE RISQUE
+// -----------------------------------------------------------------------------
+
+model RiskAnalysis {
+  id                 Int     @id @default(autoincrement()) @map("risk_analysis_id")
+  eventId            Int     @unique @map("event_id")
+  registrationNumber String? @map("registration_number") @db.VarChar(100)
+
+  concernedDomain String? @map("concerned_domain") @db.VarChar(255)
+  process         String? @db.VarChar(255)
+  product         String? @db.VarChar(255)
+
+  originAutoInspection   Boolean @default(false) @map("origin_auto_inspection")
+  originAudit            Boolean @default(false) @map("origin_audit")
+  originComplaint        Boolean @default(false) @map("origin_complaint")
+  originDeviation        Boolean @default(false) @map("origin_deviation")
+  originChange           Boolean @default(false) @map("origin_change")
+  originOther            Boolean @default(false) @map("origin_other")
+  originOtherDescription String? @map("origin_other_description") @db.Text
+
+  identifiedRisks String? @map("identified_risks") @db.Text
+  criticalPoints  String? @map("critical_points") @db.Text
+
+  actionResponsibleUserId Int?      @map("action_responsible_user_id")
+  actionResponsibleName   String?   @map("action_responsible_name") @db.VarChar(255)
+  actionResponsibleFunc   String?   @map("action_responsible_function") @db.VarChar(255)
+  actionResponsibleDate   DateTime? @map("action_responsible_date") @db.Date
+
+  verifierUserId Int?      @map("verifier_user_id")
+  verifierName   String?   @map("verifier_name") @db.VarChar(255)
+  verifierFunc   String?   @map("verifier_function") @db.VarChar(255)
+  verifierDate   DateTime? @map("verifier_date") @db.Date
+
+  approverUserId Int?      @map("approver_user_id")
+  approverName   String?   @map("approver_name") @db.VarChar(255)
+  approverFunc   String?   @map("approver_function") @db.VarChar(255)
+  approverDate   DateTime? @map("approver_date") @db.Date
+
+  status RiskStatus @default(EN_COURS)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  qualityEvent      QualityEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  actionResponsible User?        @relation("RiskActionResponsible", fields: [actionResponsibleUserId], references: [id])
+  verifier          User?        @relation("RiskVerifier", fields: [verifierUserId], references: [id])
+  approver          User?        @relation("RiskApprover", fields: [approverUserId], references: [id])
+
+  evaluationItems RiskEvaluationItem[]
+  capa            Capa?
+
+  @@index([status], name: "idx_risk_status")
+  @@map("risk_analyses")
+}
+
+model RiskEvaluationItem {
+  id             Int @id @default(autoincrement()) @map("item_id")
+  riskAnalysisId Int @map("risk_analysis_id")
+
+  phaseAction          String? @map("phase_action") @db.Text
+  causes               String? @db.Text
+  consequences         String? @db.Text
+  initialRisk          String? @map("initial_risk") @db.Text
+  controlMeasures      String? @map("control_measures") @db.Text
+  preventionProtection String? @map("prevention_protection") @db.Text
+  residualRisk         String? @map("residual_risk") @db.Text
+
+  probabilityScore   Int @map("probability_score")
+  detectabilityScore Int @map("detectability_score")
+  gravityScore       Int @map("gravity_score")
+  // Note: Prisma does not strictly support GENERATED ALWAYS AS for all DBs in schema definition easily without raw SQL migration.
+  // We will compute this in application logic or add raw SQL migration if needed. For now, basic Int.
+  criticalityScore   Int @map("criticality_score")
+
+  criticalityLevel CriticalityLevel? @map("criticality_level")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  riskAnalysis RiskAnalysis @relation(fields: [riskAnalysisId], references: [id], onDelete: Cascade)
+
+  @@index([riskAnalysisId], name: "idx_risk_item_analysis")
+  @@index([criticalityScore], name: "idx_risk_criticality")
+  @@map("risk_evaluation_items")
+}
+
+// -----------------------------------------------------------------------------
+// TABLES CAPA
+// -----------------------------------------------------------------------------
+
+model Capa {
+  id         Int    @id @default(autoincrement()) @map("capa_id")
+  capaNumber String @unique @map("capa_number") @db.VarChar(50)
+
+  eventId        Int? @unique @map("event_id")
+  riskAnalysisId Int? @unique @map("risk_analysis_id")
+
+  initiationDate  DateTime @map("initiation_date") @db.Date
+  initiatorUserId Int      @map("initiator_user_id")
+  openingReason   String?  @map("opening_reason") @db.Text
+  rootCause       String?  @map("root_cause") @db.Text
+
+  approverUserId Int?      @map("approver_user_id")
+  approvalDate   DateTime? @map("approval_date") @db.Date
+  approvalNotes  String?   @map("approval_notes") @db.Text
+
+  status CapaStatus @default(CREE)
+
+  closureDate    DateTime? @map("closure_date") @db.Date
+  closureNotes   String?   @map("closure_notes") @db.Text
+  closedByUserId Int?      @map("closed_by_user_id")
+
+  totalActions     Int @default(0) @map("total_actions")
+  completedActions Int @default(0) @map("completed_actions")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  qualityEvent QualityEvent? @relation(fields: [eventId], references: [id])
+  riskAnalysis RiskAnalysis? @relation(fields: [riskAnalysisId], references: [id])
+  initiator    User          @relation("CapaInitiator", fields: [initiatorUserId], references: [id])
+  approver     User?         @relation("CapaApprover", fields: [approverUserId], references: [id])
+  closer       User?         @relation("CapaCloser", fields: [closedByUserId], references: [id])
+
+  actions       CapaAction[]
+  extensions    CapaExtension[]
+  effectiveness CapaEffectiveness?
+
+  @@index([capaNumber], name: "idx_capa_number")
+  @@index([status], name: "idx_capa_status")
+  @@index([initiationDate], name: "idx_capa_date")
+  @@map("capas")
+}
+
+model CapaAction {
+  id     Int @id @default(autoincrement()) @map("action_id")
+  capaId Int @map("capa_id")
+
+  actionReference   String?        @map("action_reference") @db.VarChar(100)
+  actionDescription String         @map("action_description") @db.Text
+  actionType        CapaActionType @map("action_type")
+
+  plannedClosureDate DateTime  @map("planned_closure_date") @db.Date
+  responsibleUserId  Int       @map("responsible_user_id")
+  actualClosureDate  DateTime? @map("actual_closure_date") @db.Date
+
+  status CapaActionStatus @default(PLANIFIEE)
+
+  validatedByUserId Int?      @map("validated_by_user_id")
+  validatedAt       DateTime? @map("validated_at")
+  validationNotes   String?   @map("validation_notes") @db.Text
+
+  evidenceDescription String? @map("evidence_description") @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  capa            Capa  @relation(fields: [capaId], references: [id], onDelete: Cascade)
+  responsibleUser User  @relation("CapaActionResponsible", fields: [responsibleUserId], references: [id])
+  validator       User? @relation("CapaActionValidator", fields: [validatedByUserId], references: [id])
+
+  extensions CapaExtension[]
+
+  @@index([capaId], name: "idx_act_capa")
+  @@index([responsibleUserId], name: "idx_act_responsible")
+  @@index([status], name: "idx_act_status")
+  @@map("capa_actions")
+}
+
+model CapaExtension {
+  id       Int  @id @default(autoincrement()) @map("extension_id")
+  capaId   Int  @map("capa_id")
+  actionId Int? @map("action_id")
+
+  justification     String   @db.Text
+  requestedDate     DateTime @map("requested_date") @db.Date
+  requestedByUserId Int      @map("requested_by_user_id")
+
+  newDeadline DateTime? @map("new_deadline") @db.Date
+
+  approvedByUserId Int?           @map("approved_by_user_id")
+  approvalDate     DateTime?      @map("approval_date") @db.Date
+  approvalStatus   ApprovalStatus @default(EN_ATTENTE) @map("approval_status")
+  rejectionReason  String?        @map("rejection_reason") @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  capa      Capa        @relation(fields: [capaId], references: [id], onDelete: Cascade)
+  action    CapaAction? @relation(fields: [actionId], references: [id], onDelete: Cascade)
+  requester User        @relation("ExtensionRequester", fields: [requestedByUserId], references: [id])
+  approver  User?       @relation("ExtensionApprover", fields: [approvedByUserId], references: [id])
+
+  @@index([capaId], name: "idx_ext_capa")
+  @@index([approvalStatus], name: "idx_ext_status")
+  @@map("capa_extensions")
+}
+
+model CapaEffectiveness {
+  id     Int @id @default(autoincrement()) @map("effectiveness_id")
+  capaId Int @unique @map("capa_id")
+
+  verificationDate DateTime? @map("verification_date") @db.Date
+  capaReference    String?   @map("capa_reference") @db.VarChar(100)
+
+  capaPlanObjectives String? @map("capa_plan_objectives") @db.Text
+
+  staffTrained        Boolean? @map("staff_trained")
+  staffTrainedComment String?  @map("staff_trained_comment") @db.Text
+
+  modificationsUsed        Boolean? @map("modifications_used")
+  modificationsUsedComment String?  @map("modifications_used_comment") @db.Text
+
+  documentChangesMade    Boolean? @map("document_changes_made")
+  documentChangesComment String?  @map("document_changes_comment") @db.Text
+
+  gapReoccurred        Boolean? @map("gap_reoccurred")
+  gapReoccurredComment String?  @map("gap_reoccurred_comment") @db.Text
+
+  objectiveAchieved        Boolean? @map("objective_achieved")
+  objectiveAchievedComment String?  @map("objective_achieved_comment") @db.Text
+
+  isEffective           Boolean? @map("is_effective")
+  actionsIfNotEffective String?  @map("actions_if_not_effective") @db.Text
+
+  verifierUserId Int?      @map("verifier_user_id")
+  verifierName   String?   @map("verifier_name") @db.VarChar(255)
+  verifierDate   DateTime? @map("verifier_date") @db.Date
+
+  responsibleUserId Int?      @map("responsible_user_id")
+  responsibleName   String?   @map("responsible_name") @db.VarChar(255)
+  responsibleDate   DateTime? @map("responsible_date") @db.Date
+
+  smqResponsibleUserId Int?      @map("smq_responsible_user_id")
+  smqResponsibleName   String?   @map("smq_responsible_name") @db.VarChar(255)
+  smqResponsibleDate   DateTime? @map("smq_responsible_date") @db.Date
+
+  status EffectivenessStatus @default(EN_ATTENTE)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  capa        Capa  @relation(fields: [capaId], references: [id], onDelete: Cascade)
+  verifier    User? @relation("EffectivenessVerifier", fields: [verifierUserId], references: [id])
+  responsible User? @relation("EffectivenessResponsible", fields: [responsibleUserId], references: [id])
+  smq         User? @relation("EffectivenessSmq", fields: [smqResponsibleUserId], references: [id])
+
+  @@index([capaId], name: "idx_eff_capa")
+  @@index([status], name: "idx_eff_status")
+  @@map("capa_effectiveness")
+}
+
+// -----------------------------------------------------------------------------
+// TABLES SUPPORT
+// -----------------------------------------------------------------------------
+
+model Document {
+  id Int @id @default(autoincrement()) @map("document_id")
+
+  relatedEntityType EntityType @map("related_entity_type")
+  relatedEntityId   Int        @map("related_entity_id")
+
+  documentType     String?           @map("document_type") @db.VarChar(100)
+  documentCategory DocumentCategory? @map("document_category")
+
+  fileName         String  @map("file_name") @db.VarChar(255)
+  originalFileName String? @map("original_file_name") @db.VarChar(255)
+  filePath         String  @map("file_path") @db.VarChar(500)
+  fileSizeKb       Int?    @map("file_size_kb")
+  mimeType         String? @map("mime_type") @db.VarChar(100)
+
+  uploadedByUserId Int?      @map("uploaded_by_user_id")
+  uploadDate       DateTime? @default(now()) @map("upload_date")
+
+  description String? @db.Text
+
+  isDeleted       Boolean   @default(false) @map("is_deleted")
+  deletedAt       DateTime? @map("deleted_at")
+  deletedByUserId Int?      @map("deleted_by_user_id")
+
+  uploader User? @relation("Uploader", fields: [uploadedByUserId], references: [id])
+  deleter  User? @relation("Deleter", fields: [deletedByUserId], references: [id])
+
+  @@index([relatedEntityType, relatedEntityId], name: "idx_doc_entity")
+  @@index([uploadedByUserId], name: "idx_doc_uploader")
+  @@map("documents")
+}
+
+model Notification {
+  id     Int @id @default(autoincrement()) @map("notification_id")
+  userId Int @map("user_id")
+
+  notificationType String?              @map("notification_type") @db.VarChar(100)
+  priority         NotificationPriority @default(NORMALE)
+
+  title   String @db.VarChar(255)
+  message String @db.Text
+
+  relatedEntityType EntityType? @map("related_entity_type")
+  relatedEntityId   Int?        @map("related_entity_id")
+  actionUrl         String?     @map("action_url") @db.VarChar(500)
+
+  isRead Boolean   @default(false) @map("is_read")
+  readAt DateTime? @map("read_at")
+
+  isDeleted Boolean @default(false) @map("is_deleted")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  expiresAt DateTime? @map("expires_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], name: "idx_notif_user")
+  @@index([isRead], name: "idx_notif_read")
+  @@index([createdAt], name: "idx_notif_created")
+  @@map("notifications")
+}
+
+model AuditLog {
+  id Int @id @default(autoincrement()) @map("log_id")
+
+  userId   Int?    @map("user_id")
+  username String? @db.VarChar(100)
+
+  actionType String @map("action_type") @db.VarChar(100)
+  entityType String @map("entity_type") @db.VarChar(100)
+  entityId   Int    @map("entity_id")
+
+  oldValue Json? @map("old_value")
+  newValue Json? @map("new_value")
+
+  ipAddress String? @map("ip_address") @db.VarChar(45)
+  userAgent String? @map("user_agent") @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId], name: "idx_audit_user")
+  @@index([entityType, entityId], name: "idx_audit_entity")
+  @@index([actionType], name: "idx_audit_action")
+  @@index([createdAt], name: "idx_audit_created")
+  @@map("audit_log")
+}

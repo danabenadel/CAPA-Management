@@ -1,0 +1,67 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    container_name: genericlab-keycloak
+    environment:
+      # Admin credentials
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin123
+
+      # Database configuration (dev mode uses H2)
+      KC_DB: dev-file
+
+      # HTTP configuration
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_PORT: 8080
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+
+    command:
+      - start-dev
+
+    ports:
+      - "8080:8080"
+
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+
+    networks:
+      - genericlab-network
+
+  # Application Database
+  postgres:
+    image: postgres:15
+    container_name: genericlab-db
+    environment:
+      POSTGRES_DB: genericlab
+      POSTGRES_USER: genericlab
+      POSTGRES_PASSWORD: secure_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - genericlab-network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: genericlab-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@genericlab.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    networks:
+      - genericlab-network
+    depends_on:
+      - postgres
+
+volumes:
+  keycloak_data:
+    driver: local
+  postgres_data:
+    driver: local
+
+networks:
+  genericlab-network:
+    driver: bridge

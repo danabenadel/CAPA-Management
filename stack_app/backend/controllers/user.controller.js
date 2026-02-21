@@ -1,9 +1,16 @@
-import { users } from '../models/data.js';
+import prisma from '../config/prisma.js';
 
 export const userController = {
   // GET tous les utilisateurs
-  getAll: (req, res) => {
+  getAll: async (req, res) => {
     try {
+      const users = await prisma.user.findMany({
+        orderBy: { id: 'asc' },
+        include: {
+          role: true,
+          department: true
+        }
+      });
       res.json({
         success: true,
         data: users,
@@ -14,10 +21,29 @@ export const userController = {
     }
   },
 
-  // GET un utilisateur par ID
-  getById: (req, res) => {
+  // GET un utilisateur par ID ou Email ou Username
+  getById: async (req, res) => {
     try {
-      const user = users.find(u => u.id === parseInt(req.params.id));
+      const param = req.params.id;
+      let query;
+
+      if (!isNaN(param)) {
+        query = { id: parseInt(param) };
+      } else if (param.includes('@')) {
+        query = { email: param };
+      } else {
+        query = { username: param };
+      }
+
+      const user = await prisma.user.findFirst({
+        where: query,
+        include: {
+          role: true,
+          department: true,
+          managedDepartments: true
+        }
+      });
+
       if (!user) {
         return res.status(404).json({ success: false, error: 'Utilisateur non trouvé' });
       }
@@ -28,14 +54,18 @@ export const userController = {
   },
 
   // POST créer un nouvel utilisateur
-  create: (req, res) => {
+  create: async (req, res) => {
     try {
-      const newUser = {
-        id: users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1,
-        ...req.body,
-        statut: 'Actif'
-      };
-      users.push(newUser);
+      const newUser = await prisma.user.create({
+        data: {
+          ...req.body,
+          isActive: true
+        },
+        include: {
+          role: true,
+          department: true
+        }
+      });
       res.status(201).json({ success: true, data: newUser });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });
@@ -43,28 +73,45 @@ export const userController = {
   },
 
   // PUT mettre à jour un utilisateur
-  update: (req, res) => {
+  update: async (req, res) => {
     try {
-      const index = users.findIndex(u => u.id === parseInt(req.params.id));
-      if (index === -1) {
+      const id = parseInt(req.params.id);
+
+      const existing = await prisma.user.findUnique({ where: { id } });
+      if (!existing) {
         return res.status(404).json({ success: false, error: 'Utilisateur non trouvé' });
       }
-      users[index] = { ...users[index], ...req.body };
-      res.json({ success: true, data: users[index] });
+
+      const updated = await prisma.user.update({
+        where: { id },
+        data: req.body,
+        include: {
+          role: true,
+          department: true
+        }
+      });
+
+      res.json({ success: true, data: updated });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });
     }
   },
 
   // DELETE supprimer un utilisateur
-  delete: (req, res) => {
+  delete: async (req, res) => {
     try {
-      const index = users.findIndex(u => u.id === parseInt(req.params.id));
-      if (index === -1) {
+      const id = parseInt(req.params.id);
+
+      const existing = await prisma.user.findUnique({ where: { id } });
+      if (!existing) {
         return res.status(404).json({ success: false, error: 'Utilisateur non trouvé' });
       }
-      const deleted = users.splice(index, 1);
-      res.json({ success: true, data: deleted[0] });
+
+      // Soft delete preferred? Schema has isActive.
+      // For now, implementing hard delete as requested, but standard practice is soft delete.
+      await prisma.user.delete({ where: { id } });
+
+      res.json({ success: true, message: 'Utilisateur supprimé', data: existing });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });
     }

@@ -77,3 +77,13 @@ export const currentUser = {
   role: 'Admin',
   departement: 'Qualité',
 };
+
+export let activities = [
+  {
+    id: 1,
+    userId: 1,
+    action: 'Connexion',
+    description: 'Vous vous êtes connecté à l\'application',
+    timestamp: new Date(Date.now() - 3600000).toISOString()
+  }
+];

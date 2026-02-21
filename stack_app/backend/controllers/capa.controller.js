@@ -1,9 +1,17 @@
-import { capas } from '../models/data.js';
+import prisma from '../config/prisma.js';
 
 export const capaController = {
   // GET toutes les CAPA
-  getAll: (req, res) => {
+  getAll: async (req, res) => {
     try {
+      const capas = await prisma.capa.findMany({
+        orderBy: { id: 'desc' },
+        include: {
+          initiator: { select: { firstName: true, lastName: true } },
+          actions: true,
+          qualityEvent: { select: { eventNumber: true } }
+        }
+      });
       res.json({
         success: true,
         data: capas,
@@ -14,10 +22,30 @@ export const capaController = {
     }
   },
 
-  // GET une CAPA par ID
-  getById: (req, res) => {
+  // GET une CAPA par ID ou Numéro
+  getById: async (req, res) => {
     try {
-      const capa = capas.find(c => c.id === parseInt(req.params.id));
+      const param = req.params.id;
+      const query = isNaN(param) ? { capaNumber: param } : { id: parseInt(param) };
+
+      const capa = await prisma.capa.findUnique({
+        where: query,
+        include: {
+          initiator: { select: { firstName: true, lastName: true } },
+          approver: { select: { firstName: true, lastName: true } },
+          closer: { select: { firstName: true, lastName: true } },
+          actions: {
+            include: {
+              responsibleUser: { select: { firstName: true, lastName: true } }
+            }
+          },
+          qualityEvent: true,
+          riskAnalysis: true,
+          effectiveness: true,
+          extensions: true
+        }
+      });
+
       if (!capa) {
         return res.status(404).json({ success: false, error: 'CAPA non trouvée' });
       }
@@ -28,14 +56,28 @@ export const capaController = {
   },
 
   // POST créer une nouvelle CAPA
-  create: (req, res) => {
+  create: async (req, res) => {
     try {
-      const newCapa = {
-        id: capas.length > 0 ? Math.max(...capas.map(c => c.id)) + 1 : 1,
-        ...req.body,
-        dateCreation: new Date().toISOString().split('T')[0]
-      };
-      capas.push(newCapa);
+      const { eventId, riskAnalysisId, initiatorUserId, ...data } = req.body;
+
+      // Génération automatique du numéro CAPA: AA/CPA/XXX
+      const year = new Date().getFullYear().toString().slice(-2);
+      const count = await prisma.capa.count();
+      const sequence = (count + 1).toString().padStart(3, '0');
+      const capaNumber = `${year}/CPA/${sequence}`;
+
+      const newCapa = await prisma.capa.create({
+        data: {
+          ...data,
+          capaNumber,
+          eventId,
+          riskAnalysisId,
+          initiatorUserId,
+          initiationDate: new Date(),
+          status: 'CREE'
+        }
+      });
+
       res.status(201).json({ success: true, data: newCapa });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });
@@ -43,37 +85,51 @@ export const capaController = {
   },
 
   // PUT mettre à jour une CAPA
-  update: (req, res) => {
+  update: async (req, res) => {
     try {
-      const index = capas.findIndex(c => c.id === parseInt(req.params.id));
-      if (index === -1) {
+      const id = parseInt(req.params.id);
+
+      const existing = await prisma.capa.findUnique({ where: { id } });
+      if (!existing) {
         return res.status(404).json({ success: false, error: 'CAPA non trouvée' });
       }
-      capas[index] = { ...capas[index], ...req.body };
-      res.json({ success: true, data: capas[index] });
+
+      const updated = await prisma.capa.update({
+        where: { id },
+        data: req.body
+      });
+
+      res.json({ success: true, data: updated });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });
     }
   },
 
   // DELETE supprimer une CAPA
-  delete: (req, res) => {
+  delete: async (req, res) => {
     try {
-      const index = capas.findIndex(c => c.id === parseInt(req.params.id));
-      if (index === -1) {
-        return res.status(404).json({ success: false, error: 'CAPA non trouvée' });
-      }
-      const deleted = capas.splice(index, 1);
-      res.json({ success: true, data: deleted[0] });
+      const id = parseInt(req.params.id);
+      // Note: check permissions, usually deleting a CAPA is restricted
+
+      await prisma.capa.delete({ where: { id } });
+      res.json({ success: true, message: 'CAPA supprimée' });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });
     }
   },
 
+  // GET CAPA stats
+  getStats: async (req, res) => {
+    // Implement statistics if needed locally or delegate to stats controller
+    res.json({ message: "Use stats controller" });
+  },
+
   // GET CAPA par statut
-  getByStatus: (req, res) => {
+  getByStatus: async (req, res) => {
     try {
-      const filtered = capas.filter(c => c.statut.toLowerCase() === req.params.status.toLowerCase());
+      const filtered = await prisma.capa.findMany({
+        where: { status: { equals: req.params.status, mode: 'insensitive' } }
+      });
       res.json({ success: true, data: filtered, count: filtered.length });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });

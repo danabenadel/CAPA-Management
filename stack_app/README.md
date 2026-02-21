@@ -11,7 +11,7 @@ Ce projet utilise une architecture moderne séparée en deux parties :
 
 ## 📁 Structure du projet
 
-\`\`\`
+```
 genericlab-capa/
 ├── frontend/               # Application Nuxt.js
 │   ├── assets/            # CSS et ressources statiques
@@ -33,7 +33,7 @@ genericlab-capa/
 │   └── package.json
 │
 └── README.md
-\`\`\`
+```
 
 ## 🔧 Installation
 
@@ -44,35 +44,35 @@ genericlab-capa/
 
 ### Installation du Frontend
 
-\`\`\`bash
+```bash
 cd frontend
 npm install
-\`\`\`
+```
 
 ### Installation du Backend
 
-\`\`\`bash
+```bash
 cd backend
 npm install
-\`\`\`
+```
 
 ## 🚀 Démarrage
 
 ### Démarrer le Backend (API)
 
-\`\`\`bash
+```bash
 cd backend
 npm run dev
-\`\`\`
+```
 
 Le serveur API sera accessible sur [http://localhost:3001](http://localhost:3001)
 
 ### Démarrer le Frontend
 
-\`\`\`bash
+```bash
 cd frontend
 npm run dev
-\`\`\`
+```
 
 L'application frontend sera accessible sur [http://localhost:3000](http://localhost:3000)
 
@@ -130,16 +130,16 @@ Mot de passe : n'importe quel mot de passe (en mode démo)
 ## 📝 Variables d'environnement
 
 ### Frontend (.env)
-\`\`\`env
+```env
 NUXT_PUBLIC_API_BASE=http://localhost:3001/api
-\`\`\`
+```
 
 ### Backend (.env)
-\`\`\`env
+```env
 PORT=3001
 NODE_ENV=development
 FRONTEND_URL=http://localhost:3000
-\`\`\`
+```
 
 ## 🌟 Fonctionnalités
 
@@ -154,34 +154,34 @@ FRONTEND_URL=http://localhost:3000
 ## 🛠️ Scripts disponibles
 
 ### Frontend
-\`\`\`bash
+```bash
 npm run dev      # Démarrage en mode développement
 npm run build    # Build pour la production
 npm run generate # Génération statique
 npm run preview  # Preview du build de production
-\`\`\`
+```
 
 ### Backend
-\`\`\`bash
+```bash
 npm run dev      # Démarrage avec nodemon
 npm start        # Démarrage en production
-\`\`\`
+```
 
 ## 📦 Déploiement
 
 ### Frontend (Vercel)
 Le frontend peut être déployé sur Vercel :
-\`\`\`bash
+```bash
 cd frontend
 npm run build
-\`\`\`
+```
 
 ### Backend (Heroku, Railway, etc.)
 Le backend peut être déployé sur n'importe quel service supportant Node.js :
-\`\`\`bash
+```bash
 cd backend
 npm start
-\`\`\`
+```
 
 ## 🔜 Prochaines étapes
 

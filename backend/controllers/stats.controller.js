@@ -51,29 +51,42 @@ export const statsController = {
         capaParMois[moisLabels[month]]++;
       });
 
-      // 4. CAPA Récentes (Last 5)
+      // 4. CAPA Récentes (Last 8 to fill the table better)
       const recentDbCapas = await prisma.capa.findMany({
-        take: 5,
+        take: 8,
         orderBy: { initiationDate: 'desc' },
         include: {
-          initiator: true
+          initiator: {
+            include: { department: true }
+          },
+          qualityEvent: true
         }
       });
 
       const mapStatus = (status) => {
-        if (status === 'CREE') return 'Ouverte';
+        if (status === 'CREE') return 'Nouveau';
+        if (status === 'EN_ATTENTE_EFFICACITE') return 'Attente V.E';
+        if (status === 'EFFICACE') return 'Efficace';
         if (status === 'CLOTURE') return 'Clôturée';
         return 'En cours';
       };
 
-      const capasRecentes = recentDbCapas.map(c => ({
-        id: c.id,
-        titre: c.capaNumber,
-        type: 'Qualité Systémique', // Mock type
-        statut: mapStatus(c.status),
-        priorite: ['Haute', 'Moyenne', 'Basse'][Math.floor(Math.random() * 3)], // Mock priority
-        responsable: `${c.initiator?.firstName || ''} ${c.initiator?.lastName || ''}`.trim() || c.initiator?.username
-      }));
+      const capasRecentes = recentDbCapas.map(c => {
+        // Derive a pseudo priority from the process or actions count for visual diversity
+        let priorite = 'Moyenne';
+        if (c.totalActions > 2) priorite = 'Haute';
+        if (c.status === 'CLOTURE' || c.status === 'EFFICACE') priorite = 'Basse';
+
+        return {
+          id: c.id,
+          titre: c.capaNumber,
+          type: c.qualityEvent?.affectedProcess || 'Processus Général',
+          statut: mapStatus(c.status),
+          priorite: priorite,
+          responsable: `${c.initiator?.firstName || ''} ${c.initiator?.lastName || ''}`.trim() || c.initiator?.username,
+          departement: c.initiator?.department?.departmentCode || 'N/A'
+        };
+      });
 
       res.json({
         success: true,

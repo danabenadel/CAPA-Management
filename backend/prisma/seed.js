@@ -152,92 +152,82 @@ async function main() {
   }
 
   // ---------------------------------------------------------------------------
-  // 5. Fake Data for Dashboard (Events, CAPAs)
+  // 5. Fake Data for Dashboard (Comprehensive)
   // ---------------------------------------------------------------------------
-  console.log('Seeding Fake CAPA Data...');
-  const qaUser = await prisma.user.findFirst({ where: { email: 'qa@genericlab.com' } });
+  console.log('Seeding Comprehensive Fake CAPA Data...');
 
-  // 1. Un Evénement Qualité (Déviation)
-  const event1 = await prisma.qualityEvent.upsert({
-    where: { eventNumber: 'EV-2026-001' },
-    update: {},
-    create: {
-      eventNumber: 'EV-2026-001',
-      eventDate: new Date(),
-      reporterUserId: qaUser.id,
-      problemDescription: 'Température hors limite dans le sas de production (27°C au lieu de 22°C).',
-      problemLocation: 'Sas Production 1',
-      affectedProcess: 'Fabrication',
-      status: 'CLOTURE', // Pour pouvoir lier une CAPA
-    },
-  });
+  // Fetch users to assign them randomly
+  const allUsers = await prisma.user.findMany();
+  const getRandomUser = () => allUsers[Math.floor(Math.random() * allUsers.length)].id;
 
-  // 1. Une CAPA active
-  const capa1 = await prisma.capa.upsert({
-    where: { capaNumber: 'CAPA-2026-001' },
-    update: {},
-    create: {
-      capaNumber: 'CAPA-2026-001',
-      eventId: event1.id,
-      initiationDate: new Date(),
-      initiatorUserId: qaUser.id,
-      openingReason: 'Déviation de température récurrente dans le sas.',
-      rootCause: 'Défaillance du capteur de régulation de la centrale de traitement d\'air.',
-      status: 'EN_COURS',
-      totalActions: 2,
-      completedActions: 1,
+  const mockEvents = [
+    { num: 'EV-2026-001', desc: 'Température hors limite dans le sas de production (27°C au lieu de 22°C).', loc: 'Sas Prod 1', proc: 'Fabrication', stat: 'CLOTURE' },
+    { num: 'EV-2026-002', desc: 'Défaillance du système de pesée (erreur de calibration > 5g).', loc: 'Pesage Ligne 2', proc: 'Pesée', stat: 'CLOTURE' },
+    { num: 'EV-2026-003', desc: 'Décoloration inattendue du produit fini (Lot 458X).', loc: 'Zone Quarantaine', proc: 'Inspection', stat: 'CLOTURE' },
+    { num: 'EV-2026-004', desc: 'Rupture de stock critique composant actif X-Rayon.', loc: 'Magasin Central', proc: 'Supply Chain', stat: 'CLOTURE' },
+    { num: 'EV-2026-005', desc: 'Fuite détectée sur le réacteur principal R-05.', loc: 'Atelier Synthèse', proc: 'Synthèse', stat: 'CLOTURE' },
+    { num: 'EV-2026-006', desc: 'Erreur d\'étiquetage sur lot export (blister FR au lieu de EN).', loc: 'Conditionnement', proc: 'Emballage', stat: 'CLOTURE' },
+    { num: 'EV-2026-007', desc: 'Contamination microbienne hors spécifications sur test environnemental.', loc: 'Salle Blanche B', proc: 'Contrôle Qualité', stat: 'CLOTURE' },
+    { num: 'EV-2026-008', desc: 'Variation majeure de pression lors de la lyophilisation.', loc: 'Lyophilisateur 3', proc: 'Séchage', stat: 'CLOTURE' }
+  ];
+
+  for (let i = 0; i < mockEvents.length; i++) {
+    const e = mockEvents[i];
+    const event = await prisma.qualityEvent.upsert({
+      where: { eventNumber: e.num },
+      update: {},
+      create: {
+        eventNumber: e.num,
+        eventDate: new Date(Date.now() - Math.floor(Math.random() * 60) * 24 * 60 * 60 * 1000), // Random date past 2 months
+        reporterUserId: getRandomUser(),
+        problemDescription: e.desc,
+        problemLocation: e.loc,
+        affectedProcess: e.proc,
+        status: e.stat,
+      },
+    });
+
+    // Create 1 CAPA per event
+    const capaStatuses = ['EN_COURS', 'EN_ATTENTE_EFFICACITE', 'EFFICACE', 'CLOTURE'];
+    // Predictable status assignment based on index to ensure variety
+    const cStat = capaStatuses[i % capaStatuses.length];
+
+    // Set a risk ID for joining with departments conceptually in the dashboard if needed, or link via event.
+    const capa = await prisma.capa.upsert({
+      where: { capaNumber: `CAPA-2026-00${i + 1}` },
+      update: {},
+      create: {
+        capaNumber: `CAPA-2026-00${i + 1}`,
+        eventId: event.id,
+        initiationDate: new Date(event.eventDate.getTime() + 2 * 24 * 60 * 60 * 1000), // 2 days after event
+        initiatorUserId: getRandomUser(),
+        openingReason: `Investigation suite à ${e.num}`,
+        rootCause: `Analyse 5M terminée. Causes multiples identifiées concernant le processus "${e.proc}".`,
+        status: cStat,
+        totalActions: Math.floor(Math.random() * 3) + 1,
+        completedActions: cStat === 'CLOTURE' || cStat === 'EFFICACE' ? 2 : Math.floor(Math.random() * 2),
+        closureDate: cStat === 'CLOTURE' || cStat === 'EFFICACE' ? new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) : null,
+        closedByUserId: cStat === 'CLOTURE' || cStat === 'EFFICACE' ? getRandomUser() : null
+      }
+    });
+
+    // Create Actions for CAPA
+    for (let j = 0; j < capa.totalActions; j++) {
+      const actStat = j < capa.completedActions ? 'TERMINEE' : (Math.random() > 0.8 ? 'EN_RETARD' : 'EN_COURS');
+      await prisma.capaAction.create({
+        data: {
+          capaId: capa.id,
+          actionReference: `ACT-${capa.id}-0${j + 1}`,
+          actionDescription: j === 0 ? 'Mise à jour de la procédure opérationnelle standard (SOP).' : 'Formation des opérateurs du secteur.',
+          actionType: j === 0 ? 'PREVENTIVE' : 'CORRECTIVE',
+          plannedClosureDate: new Date(capa.initiationDate.getTime() + 15 * 24 * 60 * 60 * 1000),
+          responsibleUserId: getRandomUser(),
+          status: actStat,
+          actualClosureDate: actStat === 'TERMINEE' ? new Date(capa.initiationDate.getTime() + 10 * 24 * 60 * 60 * 1000) : null
+        }
+      });
     }
-  });
-
-  // Actions pour CAPA 1
-  await prisma.capaAction.upsert({
-    where: { id: 9991 }, // Just a fake ID placeholder if needed, or use a distinct find
-    // Since id is autoincrement, let's use a try/catch or just create if we assume clean DB
-    update: {},
-    create: {
-      capaId: capa1.id,
-      actionReference: 'ACT-001',
-      actionDescription: 'Remplacement immédiat du capteur.',
-      actionType: 'CORRECTIVE',
-      plannedClosureDate: new Date(),
-      responsibleUserId: qaUser.id,
-      status: 'TERMINEE',
-      actualClosureDate: new Date()
-    }
-  }).catch(() => { });
-
-  await prisma.capaAction.upsert({
-    where: { id: 9992 },
-    update: {},
-    create: {
-      capaId: capa1.id,
-      actionReference: 'ACT-002',
-      actionDescription: 'Mise en place d\'une maintenance préventive trimestrielle du système CVC.',
-      actionType: 'PREVENTIVE',
-      plannedClosureDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // + 15 days
-      responsibleUserId: qaUser.id,
-      status: 'PLANIFIEE'
-    }
-  }).catch(() => { });
-
-
-  // 2. Une CAPA terminée
-  const capa2 = await prisma.capa.upsert({
-    where: { capaNumber: 'CAPA-2026-002' },
-    update: {},
-    create: {
-      capaNumber: 'CAPA-2026-002',
-      initiationDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-      initiatorUserId: qaUser.id,
-      openingReason: 'Erreur d\'étiquetage sur le lot A123.',
-      rootCause: 'Mauvaise configuration de l\'imprimante thermique par l\'opérateur.',
-      status: 'CLOTURE',
-      totalActions: 1,
-      completedActions: 1,
-      closureDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-      closedByUserId: qaUser.id
-    }
-  });
+  }
 
   console.log('Seeding finished.');
 }

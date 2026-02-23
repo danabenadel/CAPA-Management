@@ -94,6 +94,7 @@
                   <th class="pb-2 px-6 text-xs font-semibold uppercase tracking-wider text-slate-400">ID</th>
                   <th class="pb-2 px-6 text-xs font-semibold uppercase tracking-wider text-slate-400">Titre</th>
                   <th class="pb-2 px-6 text-xs font-semibold uppercase tracking-wider text-slate-400">Type</th>
+                  <th class="pb-2 px-6 text-xs font-semibold uppercase tracking-wider text-slate-400">Département</th>
                   <th class="pb-2 px-6 text-xs font-semibold uppercase tracking-wider text-slate-400">Statut</th>
                   <th class="pb-2 px-6 text-xs font-semibold uppercase tracking-wider text-slate-400">Priorité</th>
                   <th class="pb-2 px-6 text-xs font-semibold uppercase tracking-wider text-slate-400">Responsable</th>
@@ -108,6 +109,7 @@
                   <td class="py-4 px-6 text-sm text-slate-500 font-mono rounded-l-2xl border-y border-l border-white/60 group-hover:bg-white/90">#{{ capa.id }}</td>
                   <td class="py-4 px-6 text-sm font-bold text-accent border-y border-white/60 group-hover:bg-white/90">{{ capa.titre }}</td>
                   <td class="py-4 px-6 text-sm text-slate-600 border-y border-white/60 group-hover:bg-white/90">{{ capa.type }}</td>
+                  <td class="py-4 px-6 text-sm text-slate-500 font-medium border-y border-white/60 group-hover:bg-white/90">{{ capa.departement }}</td>
                   <td class="py-4 px-6 border-y border-white/60 group-hover:bg-white/90">
                     <span
                       class="px-4 py-1.5 text-xs font-bold rounded-full shadow-sm"
@@ -160,6 +162,7 @@ interface Capa {
   statut: string
   priorite: string
   responsable: string
+  departement?: string
 }
 
 interface User {

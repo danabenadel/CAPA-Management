@@ -7,7 +7,13 @@ export const capaController = {
       const capas = await prisma.capa.findMany({
         orderBy: { id: 'desc' },
         include: {
-          initiator: { select: { firstName: true, lastName: true } },
+          initiator: {
+            select: {
+              firstName: true,
+              lastName: true,
+              department: true
+            }
+          },
           actions: true,
           qualityEvent: { select: { eventNumber: true } }
         }

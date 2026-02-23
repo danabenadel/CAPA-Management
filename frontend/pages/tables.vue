@@ -36,9 +36,12 @@
           </div>
           <select v-model="filterStatus" class="input-field bg-white/50 border-white/60">
             <option value="">Tous les statuts</option>
-            <option value="Ouverte">Ouverte</option>
-            <option value="En cours">En cours</option>
-            <option value="Clôturée">Clôturée</option>
+            <option value="CREE">Nouvelle (Créée)</option>
+            <option value="EN_COURS">En cours</option>
+            <option value="EN_ATTENTE_EFFICACITE">Attente V.E.</option>
+            <option value="EFFICACE">Efficace</option>
+            <option value="NON_EFFICACE">Non Efficace</option>
+            <option value="CLOTURE">Clôturée</option>
           </select>
           <select v-model="filterPriority" class="input-field bg-white/50 border-white/60">
             <option value="">Toutes priorités</option>
@@ -85,7 +88,7 @@
                   <td class="py-4 px-6 text-sm text-slate-500 font-mono rounded-l-2xl border-y border-l border-white/60 group-hover:bg-white/90">#{{ capa.id }}</td>
                   <td class="py-4 px-6 text-sm font-bold text-accent border-y border-white/60 group-hover:bg-white/90">{{ capa.capaNumber }}</td>
                   <td class="py-4 px-6 text-sm text-slate-600 border-y border-white/60 group-hover:bg-white/90">{{ capa.qualityEvent ? 'Événement Qualité' : 'Autre' }}</td>
-                  <td class="py-4 px-6 text-sm text-slate-600 border-y border-white/60 group-hover:bg-white/90">{{ capa.departmentName || '-' }}</td>
+                  <td class="py-4 px-6 text-sm text-slate-600 border-y border-white/60 group-hover:bg-white/90">{{ capa.initiator?.department?.departmentName || capa.initiator?.department?.departmentCode || '-' }}</td>
                   <td class="py-4 px-6 border-y border-white/60 group-hover:bg-white/90">
                     <span
                       class="px-3 py-1 text-xs font-bold rounded-full shadow-sm"
@@ -97,9 +100,9 @@
                   <td class="py-4 px-6 border-y border-white/60 group-hover:bg-white/90">
                     <span
                       class="px-3 py-1 text-xs font-bold rounded-full shadow-sm"
-                      :class="getPriorityClass('Moyenne')" 
+                      :class="getPriorityClass(capa.priorite)" 
                     >
-                      Moyenne
+                      {{ capa.priorite }}
                     </span>
                   </td>
                   <td class="py-4 px-6 text-sm text-slate-600 flex items-center gap-3 border-y border-white/60 group-hover:bg-white/90">
@@ -189,15 +192,28 @@ const filteredCapas = computed(() => {
     result = result.filter(capa => capa.status === filterStatus.value)
   }
 
+  if (filterPriority.value) {
+    result = result.filter(capa => capa.priorite === filterPriority.value)
+  }
+
   return result
 })
+
+const mapPriority = (capa) => {
+  if (capa.totalActions > 2 || capa.actions?.length > 2) return 'Haute';
+  if (['CLOTURE', 'EFFICACE', 'NON_EFFICACE'].includes(capa.status)) return 'Basse';
+  return 'Moyenne';
+}
 
 const getStatusClass = (status) => {
   const classes = {
     'CREE': 'bg-blue-50 text-blue-700 border border-blue-200',
     'EN_COURS': 'bg-indigo-50 text-indigo-700 border border-indigo-200',
     'TERMINEE': 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-    'CLOTURE': 'bg-slate-50 text-slate-700 border border-slate-200'
+    'CLOTURE': 'bg-slate-50 text-slate-700 border border-slate-200',
+    'EN_ATTENTE_EFFICACITE': 'bg-amber-50 text-amber-700 border border-amber-200',
+    'EFFICACE': 'bg-teal-50 text-teal-700 border border-teal-200',
+    'NON_EFFICACE': 'bg-red-50 text-red-700 border border-red-200'
   }
   return classes[status] || 'bg-slate-50 text-slate-700 border border-slate-200'
 }
@@ -207,7 +223,10 @@ const formatStatus = (status) => {
     'CREE': 'Créée',
     'EN_COURS': 'En cours',
     'TERMINEE': 'Terminée',
-    'CLOTURE': 'Clôturée'
+    'CLOTURE': 'Clôturée',
+    'EN_ATTENTE_EFFICACITE': 'Attente Efficacité',
+    'EFFICACE': 'Efficace',
+    'NON_EFFICACE': 'Non Efficace'
   }
   return labels[status] || status
 }
@@ -268,7 +287,10 @@ onMounted(async () => {
   try {
     const response = await api.getAllCapas()
     if (response.success) {
-      capas.value = response.data
+      capas.value = response.data.map(c => ({
+        ...c,
+        priorite: mapPriority(c)
+      }))
     }
   } catch (error) {
     console.error('Error loading CAPAs:', error)

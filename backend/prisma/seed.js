@@ -97,38 +97,15 @@ async function main() {
   // ---------------------------------------------------------------------------
   console.log('Seeding Users...');
   const users = [
-    {
-      email: 'admin@genericlab.com',
-      username: 'admin',
-      roleCode: 'ADMIN',
-      firstName: 'System',
-      lastName: 'Admin',
-      deptCode: 'DIR',
-    },
-    {
-      email: 'qa@genericlab.com',
-      username: 'qa_manager',
-      roleCode: 'QA_MANAGER',
-      firstName: 'Marie',
-      lastName: 'Curie',
-      deptCode: 'QA',
-    },
-    {
-      email: 'prod@genericlab.com',
-      username: 'prod_manager',
-      roleCode: 'APPROVER',
-      firstName: 'John',
-      lastName: 'Doe',
-      deptCode: 'PROD',
-    },
-    {
-      email: 'tech@genericlab.com',
-      username: 'operator',
-      roleCode: 'EMPLOYEE',
-      firstName: 'Bob',
-      lastName: 'Builder',
-      deptCode: 'MAINT',
-    },
+    { email: 'admin@genericlab.com', username: 'admin', roleCode: 'ADMIN', firstName: 'System', lastName: 'Admin', deptCode: 'DIR' },
+    { email: 'qa@genericlab.com', username: 'qa_manager', roleCode: 'QA_MANAGER', firstName: 'Marie', lastName: 'Curie', deptCode: 'QA' },
+    { email: 'prod@genericlab.com', username: 'prod_manager', roleCode: 'APPROVER', firstName: 'John', lastName: 'Doe', deptCode: 'PROD' },
+    { email: 'tech@genericlab.com', username: 'operator', roleCode: 'EMPLOYEE', firstName: 'Bob', lastName: 'Builder', deptCode: 'MAINT' },
+    { email: 'log@genericlab.com', username: 'log_manager', roleCode: 'ACTION_RESP', firstName: 'Alice', lastName: 'Truck', deptCode: 'LOG' },
+    { email: 'rd@genericlab.com', username: 'rd_lead', roleCode: 'APPROVER', firstName: 'Albert', lastName: 'Einstein', deptCode: 'R&D' },
+    { email: 'rh@genericlab.com', username: 'hr_partner', roleCode: 'EMPLOYEE', firstName: 'Sara', lastName: 'Connor', deptCode: 'RH' },
+    { email: 'jean.prod@genericlab.com', username: 'jprod', roleCode: 'ACTION_RESP', firstName: 'Jean', lastName: 'Moulin', deptCode: 'PROD' },
+    { email: 'lucie.qa@genericlab.com', username: 'lqa', roleCode: 'ACTION_RESP', firstName: 'Lucie', lastName: 'Aubrac', deptCode: 'QA' }
   ];
 
   for (const u of users) {
@@ -152,78 +129,90 @@ async function main() {
   }
 
   // ---------------------------------------------------------------------------
-  // 5. Fake Data for Dashboard (Comprehensive)
+  // 5. Fake Data for Dashboard (Comprehensive & Massive)
   // ---------------------------------------------------------------------------
   console.log('Seeding Comprehensive Fake CAPA Data...');
 
-  // Fetch users to assign them randomly
   const allUsers = await prisma.user.findMany();
   const getRandomUser = () => allUsers[Math.floor(Math.random() * allUsers.length)].id;
 
-  const mockEvents = [
-    { num: 'EV-2026-001', desc: 'Température hors limite dans le sas de production (27°C au lieu de 22°C).', loc: 'Sas Prod 1', proc: 'Fabrication', stat: 'CLOTURE' },
-    { num: 'EV-2026-002', desc: 'Défaillance du système de pesée (erreur de calibration > 5g).', loc: 'Pesage Ligne 2', proc: 'Pesée', stat: 'CLOTURE' },
-    { num: 'EV-2026-003', desc: 'Décoloration inattendue du produit fini (Lot 458X).', loc: 'Zone Quarantaine', proc: 'Inspection', stat: 'CLOTURE' },
-    { num: 'EV-2026-004', desc: 'Rupture de stock critique composant actif X-Rayon.', loc: 'Magasin Central', proc: 'Supply Chain', stat: 'CLOTURE' },
-    { num: 'EV-2026-005', desc: 'Fuite détectée sur le réacteur principal R-05.', loc: 'Atelier Synthèse', proc: 'Synthèse', stat: 'CLOTURE' },
-    { num: 'EV-2026-006', desc: 'Erreur d\'étiquetage sur lot export (blister FR au lieu de EN).', loc: 'Conditionnement', proc: 'Emballage', stat: 'CLOTURE' },
-    { num: 'EV-2026-007', desc: 'Contamination microbienne hors spécifications sur test environnemental.', loc: 'Salle Blanche B', proc: 'Contrôle Qualité', stat: 'CLOTURE' },
-    { num: 'EV-2026-008', desc: 'Variation majeure de pression lors de la lyophilisation.', loc: 'Lyophilisateur 3', proc: 'Séchage', stat: 'CLOTURE' }
+  const capaStatuses = ['CREE', 'CREE', 'EN_COURS', 'EN_COURS', 'EN_COURS', 'EN_ATTENTE_EFFICACITE', 'EFFICACE', 'EFFICACE', 'NON_EFFICACE', 'CLOTURE', 'CLOTURE', 'CLOTURE', 'ETENDU'];
+
+  const mockEventsData = [
+    { desc: 'Température hors limite dans le sas de production', loc: 'Sas Prod 1', proc: 'Fabrication' },
+    { desc: 'Défaillance du système de pesée', loc: 'Pesage Ligne 2', proc: 'Pesée' },
+    { desc: 'Décoloration inattendue du produit fini', loc: 'Zone Quarantaine', proc: 'Inspection' },
+    { desc: 'Rupture de stock critique composant', loc: 'Magasin Central', proc: 'Supply Chain' },
+    { desc: 'Fuite détectée sur le réacteur R-05', loc: 'Atelier Synthèse', proc: 'Synthèse' },
+    { desc: 'Erreur d\'étiquetage sur lot export', loc: 'Conditionnement', proc: 'Emballage' },
+    { desc: 'Contamination microbienne test environnemental', loc: 'Salle Blanche B', proc: 'Contrôle Qualité' },
+    { desc: 'Variation pression lyophilisation', loc: 'Lyophilisateur 3', proc: 'Séchage' },
+    { desc: 'Déversement accidentel de solvant', loc: 'Zone Solvants', proc: 'Sécurité' },
+    { desc: 'Erreur de saisie dans le dossier de lot', loc: 'Bureau Prod', proc: 'Documentation' },
+    { desc: 'Non-conformité matières premières (humidité)', loc: 'Réception', proc: 'Contrôle Réception' },
+    { desc: 'Retard de livraison fournisseur critique', loc: 'Quai A', proc: 'Logistique' },
+    { desc: 'Bris de flacons sur la ligne 4', loc: 'Ligne 4', proc: 'Répartition' },
+    { desc: 'Perte de connexion ERP', loc: 'Serveurs', proc: 'IT' },
+    { desc: 'Absence prolongée personnel clé', loc: 'Labo Micro', proc: 'Ressources Humaines' }
   ];
 
-  for (let i = 0; i < mockEvents.length; i++) {
-    const e = mockEvents[i];
+  // Generate 25 Events & CAPAs to fill the dashboard completely
+  for (let i = 0; i < 25; i++) {
+    const eventTemplate = mockEventsData[i % mockEventsData.length];
+    const eventDate = new Date(Date.now() - Math.floor(Math.random() * 180) * 24 * 60 * 60 * 1000); // Up to 6 months ago
+
     const event = await prisma.qualityEvent.upsert({
-      where: { eventNumber: e.num },
+      where: { eventNumber: `EV-2026-${(i + 1).toString().padStart(3, '0')}` },
       update: {},
       create: {
-        eventNumber: e.num,
-        eventDate: new Date(Date.now() - Math.floor(Math.random() * 60) * 24 * 60 * 60 * 1000), // Random date past 2 months
+        eventNumber: `EV-2026-${(i + 1).toString().padStart(3, '0')}`,
+        eventDate: eventDate,
         reporterUserId: getRandomUser(),
-        problemDescription: e.desc,
-        problemLocation: e.loc,
-        affectedProcess: e.proc,
-        status: e.stat,
+        problemDescription: `${eventTemplate.desc} (Occurrence #${i + 1})`,
+        problemLocation: eventTemplate.loc,
+        affectedProcess: eventTemplate.proc,
+        status: ['CREE', 'EN_EVALUATION', 'CLASSE_DEVIATION', 'CLOTURE'][Math.floor(Math.random() * 4)],
       },
     });
 
-    // Create 1 CAPA per event
-    const capaStatuses = ['EN_COURS', 'EN_ATTENTE_EFFICACITE', 'EFFICACE', 'CLOTURE'];
-    // Predictable status assignment based on index to ensure variety
     const cStat = capaStatuses[i % capaStatuses.length];
+    const isClosedOrEffective = ['CLOTURE', 'EFFICACE', 'NON_EFFICACE'].includes(cStat);
 
-    // Set a risk ID for joining with departments conceptually in the dashboard if needed, or link via event.
     const capa = await prisma.capa.upsert({
-      where: { capaNumber: `CAPA-2026-00${i + 1}` },
+      where: { capaNumber: `CAPA-2026-${(i + 1).toString().padStart(3, '0')}` },
       update: {},
       create: {
-        capaNumber: `CAPA-2026-00${i + 1}`,
+        capaNumber: `CAPA-2026-${(i + 1).toString().padStart(3, '0')}`,
         eventId: event.id,
-        initiationDate: new Date(event.eventDate.getTime() + 2 * 24 * 60 * 60 * 1000), // 2 days after event
+        initiationDate: new Date(event.eventDate.getTime() + Math.random() * 5 * 24 * 60 * 60 * 1000),
         initiatorUserId: getRandomUser(),
-        openingReason: `Investigation suite à ${e.num}`,
-        rootCause: `Analyse 5M terminée. Causes multiples identifiées concernant le processus "${e.proc}".`,
+        openingReason: `Investigation suite à ${event.eventNumber}`,
+        rootCause: `Cause racine identifiée concernant le processus "${eventTemplate.proc}".`,
         status: cStat,
-        totalActions: Math.floor(Math.random() * 3) + 1,
-        completedActions: cStat === 'CLOTURE' || cStat === 'EFFICACE' ? 2 : Math.floor(Math.random() * 2),
-        closureDate: cStat === 'CLOTURE' || cStat === 'EFFICACE' ? new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) : null,
-        closedByUserId: cStat === 'CLOTURE' || cStat === 'EFFICACE' ? getRandomUser() : null
+        totalActions: Math.floor(Math.random() * 4) + 1,
+        completedActions: isClosedOrEffective ? 4 : Math.floor(Math.random() * 2), // Mock counts
+        closureDate: isClosedOrEffective ? new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000) : null,
+        closedByUserId: isClosedOrEffective ? getRandomUser() : null
       }
     });
 
     // Create Actions for CAPA
     for (let j = 0; j < capa.totalActions; j++) {
-      const actStat = j < capa.completedActions ? 'TERMINEE' : (Math.random() > 0.8 ? 'EN_RETARD' : 'EN_COURS');
+      let actStat;
+      if (cStat === 'CREE') actStat = 'PLANIFIEE';
+      else if (isClosedOrEffective) actStat = 'TERMINEE';
+      else actStat = Math.random() > 0.7 ? 'EN_RETARD' : (Math.random() > 0.5 ? 'EN_COURS' : 'TERMINEE');
+
       await prisma.capaAction.create({
         data: {
           capaId: capa.id,
           actionReference: `ACT-${capa.id}-0${j + 1}`,
-          actionDescription: j === 0 ? 'Mise à jour de la procédure opérationnelle standard (SOP).' : 'Formation des opérateurs du secteur.',
-          actionType: j === 0 ? 'PREVENTIVE' : 'CORRECTIVE',
-          plannedClosureDate: new Date(capa.initiationDate.getTime() + 15 * 24 * 60 * 60 * 1000),
+          actionDescription: `Action ${j === 0 ? 'corrective' : 'préventive'} pour la CAPA ${capa.capaNumber}.`,
+          actionType: j % 2 === 0 ? 'CORRECTIVE' : 'PREVENTIVE',
+          plannedClosureDate: new Date(capa.initiationDate.getTime() + (Math.random() * 30 + 10) * 24 * 60 * 60 * 1000),
           responsibleUserId: getRandomUser(),
           status: actStat,
-          actualClosureDate: actStat === 'TERMINEE' ? new Date(capa.initiationDate.getTime() + 10 * 24 * 60 * 60 * 1000) : null
+          actualClosureDate: actStat === 'TERMINEE' ? new Date(Date.now() - Math.random() * 10 * 24 * 60 * 60 * 1000) : null
         }
       });
     }

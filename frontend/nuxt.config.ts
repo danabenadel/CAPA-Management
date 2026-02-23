@@ -1,27 +1,3 @@
-import fs from 'fs';
-import path from 'path';
-
-// Files copy wrapper
-try {
-  const destDir = '/home/danabenadel/PART_TIME/genericlab-capa/Genericlab-CAPA-Management/stack_app/frontend/public';
-  if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
-
-  // Logo
-  fs.copyFileSync('/home/danabenadel/PART_TIME/genericlab-capa/logo_generic_lab_copie_page-0001-removebg-preview.png', destDir + '/logo-genericlab.png');
-
-  // Icons from AI Brain
-  const brainDir = '/mnt/c/Users/danab/.gemini/antigravity/brain/e36d6160-8579-45f1-93a9-7401119739cd';
-  const iconsDir = destDir + '/icons';
-  if (!fs.existsSync(iconsDir)) fs.mkdirSync(iconsDir, { recursive: true });
-  const files = fs.readdirSync(brainDir);
-  for (const f of files) {
-    if (f.endsWith('.png') && f.includes('_icon_')) {
-      const type = f.split('_icon_')[0];
-      fs.copyFileSync(path.join(brainDir, f), path.join(iconsDir, type + '.png'));
-    }
-  }
-} catch (e) { console.log('File copy failed', e); }
-
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',

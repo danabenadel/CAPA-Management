@@ -1,212 +1,114 @@
-# GenericLab CAPA Management
+# 💊 GenericLab - CAPA & Quality Events Management
 
-Application web moderne de gestion des CAPA (Corrective and Preventive Actions) pour les laboratoires pharmaceutiques et de santé.
+![GenericLab Platform](https://img.shields.io/badge/Status-Beta%20MVP-success?style=for-the-badge)
+![Vue.js](https://img.shields.io/badge/Vue.js-3.0-4FC08D?style=for-the-badge&logo=vue.js&logoColor=white)
+![Nuxt.js](https://img.shields.io/badge/Nuxt-4.0-00DC82?style=for-the-badge&logo=nuxt.js&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?style=for-the-badge&logo=node.js&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
 
-## 🚀 Architecture
+Application web de nouvelle génération dédiée à la gestion des **Actions Correctives et Préventives (CAPA)** et à la numérisation des événements qualité (déviations, anomalies) pour l'industrie pharmaceutique et les laboratoires de santé.
 
-Ce projet utilise une architecture moderne séparée en deux parties :
+## 📖 Description du Projet
+Le projet **GenericLab CAPA Management** a été conçu pour digitaliser des processus QSE (Qualité, Sécurité, Environnement) souvent lourds et documentaires (papier/Excel). L'objectif est double :
+1. **Accélérer la déclaration** terrain des événements qualité.
+2. **Centraliser l'investigation** de la cause racine (Root Cause Analysis - QQOQCP) et le suivi des plans d'actions (CAPA) associés.
 
-- **Frontend** : Nuxt.js 4 (Vue 3) avec Tailwind CSS
-- **Backend** : Express.js (API REST)
+L'application bénéficie d'une interface utilisateur moderne (Soft-UI / Glassmorphism) s'affranchissant de l'austérité habituelle des logiciels industriels.
 
-## 📁 Structure du projet
+## ✨ Fonctionnalités Principales
+- 📊 **Tableau de Bord Intéractif** : Vue globale en temps réel (Chart.js) sur les KPIs vitaux (CAPA Actives, Répartition par département et statut).
+- 🚨 **Déclaration d'Événements** : Saisie rapide et qualifiée des signalements (avec typologie, lieu, impact produit).
+- 🔍 **Moteur d'Investigation** : Processus structuré (Méthode QQOQCP) pour analyser l'événement avant clôture.
+- ⚙️ **Suivi des Actions CAPA** : Cycle de vie complet des actions correctives, assignations et traçabilité.
+- 🔐 **Sécurité Industrielle (SSO)** : Authentification robuste déléguée à un serveur **Keycloak** (OIDC / OAuth2).
 
-```
-genericlab-capa/
-├── frontend/               # Application Nuxt.js
-│   ├── assets/            # CSS et ressources statiques
-│   ├── components/        # Composants Vue réutilisables
-│   ├── composables/       # Composables Vue (useApi, etc.)
-│   ├── middleware/        # Middleware de route (auth)
-│   ├── pages/             # Pages de l'application (routing auto)
-│   ├── public/            # Fichiers statiques publics
-│   ├── app.vue            # Composant racine
-│   ├── nuxt.config.ts     # Configuration Nuxt
-│   └── package.json
-│
-├── backend/               # API Express.js
-│   ├── controllers/       # Contrôleurs (logique métier)
-│   ├── routes/            # Définition des routes API
-│   ├── models/            # Modèles de données
-│   ├── middleware/        # Middleware Express
-│   ├── server.js          # Point d'entrée du serveur
-│   └── package.json
-│
-└── README.md
-```
+## 🛠️ Stack Technique
+### Frontend
+- **Framework** : Nuxt 4 (Vue 3, Composition API)
+- **Styling** : Tailwind CSS v3 (Design "Atmosphere" Soft-UI)
+- **Icônes & Graphiques** : Lucide Vue Next, Chart.js / Vue-chartjs
+- **Composants** : Headless UI / Radix Vue pour l'accessibilité
+- **HTTP/API** : Axios (gestion centralisée avec intercepteurs pour token JWT)
 
-## 🔧 Installation
+### Backend
+- **Serveur** : Node.js avec Express.js
+- **Base de données** : PostgreSQL 15
+- **ORM** : Prisma ORM (Modélisation stricte et migrations)
+- **Authentification** : Middlewares de validation JWT via Keycloak
+- **File System** : Multer (pour l'upload de preuves matérielles / documents)
 
-### Prérequis
+### Infrastructure & Déploiement
+- **Conteneurisation** : Docker & Docker Compose (Base de données locale = Postgres + pgAdmin, Serveur d'authentification = Keycloak 23.0)
 
-- Node.js v20.19.0 ou supérieur
-- npm ou yarn
+---
 
-### Installation du Frontend
+## 🚀 Installation & Lancement (Local)
 
+### 1. Prérequis
+- Node.js (v20+ recommandé)
+- Docker Desktop (ou Docker Engine + Docker Compose)
+- Git
+
+### 2. Infrastructure Docker (BDD & SSO)
+L'application dépend d'une base PostgreSQL et de Keycloak. Ces services sont conteneurisés.
 ```bash
-cd frontend
-npm install
+# Lancer les conteneurs en arrière-plan
+docker-compose up -d
+
+# Important : Si c'est votre premier lancement, vous devez configurer le Realm de Keycloak.
+# (Voir le guide KEYCLOAK_SETUP.md à la racine).
 ```
 
-### Installation du Backend
-
+### 3. Backend (API Node.js)
 ```bash
 cd backend
+
+# Installer les dépendances
 npm install
-```
 
-## 🚀 Démarrage
+# Créer un fichier .env (Copiez le .env.setup existant et modifiez-le si besoin)
+cp .env.setup .env
 
-### Démarrer le Backend (API)
+# Génération du client Prisma et application de la structure en base
+npx prisma generate
+npx prisma db push
 
-```bash
-cd backend
+# (Optionnel) Seed de la BDD pour charger des jeux d'essais
+node utils/seed.js
+
+# Lancer le serveur (Port 3001)
 npm run dev
 ```
 
-Le serveur API sera accessible sur [http://localhost:3001](http://localhost:3001)
-
-### Démarrer le Frontend
-
+### 4. Frontend (Nuxt)
 ```bash
+# Dans un nouveau terminal
 cd frontend
+
+# Installer les dépendances
+npm install
+
+# Lancer le serveur de développement (Port 3000)
 npm run dev
 ```
+💡 **L'interface est maintenant accessible sur `http://localhost:3000` !**
 
-L'application frontend sera accessible sur [http://localhost:3000](http://localhost:3000)
+---
 
-## 📡 API Endpoints
-
-### Authentification
-- \`POST /api/auth/login\` - Connexion
-- \`POST /api/auth/logout\` - Déconnexion
-- \`GET /api/auth/profile\` - Profil utilisateur
-
-### CAPA
-- \`GET /api/capa\` - Liste toutes les CAPA
-- \`GET /api/capa/:id\` - Détails d'une CAPA
-- \`POST /api/capa\` - Créer une CAPA
-- \`PUT /api/capa/:id\` - Mettre à jour une CAPA
-- \`DELETE /api/capa/:id\` - Supprimer une CAPA
-- \`GET /api/capa/status/:status\` - CAPA par statut
-
-### Utilisateurs
-- \`GET /api/users\` - Liste tous les utilisateurs
-- \`GET /api/users/:id\` - Détails d'un utilisateur
-- \`POST /api/users\` - Créer un utilisateur
-- \`PUT /api/users/:id\` - Mettre à jour un utilisateur
-- \`DELETE /api/users/:id\` - Supprimer un utilisateur
-
-### Statistiques
-- \`GET /api/stats/dashboard\` - Statistiques du dashboard
-- \`GET /api/stats/period/:period\` - Statistiques par période
-
-## 🎨 Technologies utilisées
-
-### Frontend
-- **Nuxt.js 4** - Framework Vue.js pour applications web
-- **Vue 3** - Framework JavaScript progressif
-- **Tailwind CSS** - Framework CSS utility-first
-- **Lucide Vue Next** - Bibliothèque d'icônes
-- **TypeScript** - Support TypeScript
-
-### Backend
-- **Express.js** - Framework web Node.js
-- **CORS** - Gestion des requêtes cross-origin
-- **dotenv** - Gestion des variables d'environnement
-- **Nodemon** - Rechargement automatique en développement
-
-## 🔐 Authentification
-
-Pour vous connecter en mode démo, utilisez l'un de ces comptes :
-
-- **Admin** : marie.dupont@genericlab.com
-- **User** : jean.martin@genericlab.com
-- **User** : sophie.bernard@genericlab.com
-
-Mot de passe : n'importe quel mot de passe (en mode démo)
-
-## 📝 Variables d'environnement
-
-### Frontend (.env)
-```env
-NUXT_PUBLIC_API_BASE=http://localhost:3001/api
+## 📂 Architecture du Dépôt (Mono-repo)
+```text
+Genericlab-CAPA-Management/
+├── backend/                  # Serveur Express, Prisma schema, Routes & Controllers
+├── frontend/                 # Application Vue 3 / Nuxt 4, Pages & Composants
+├── documents/                # Ressources documentaires, specs et maquettes
+├── docker-compose.yml        # Infrastructure (Keycloak, Postgres, pgAdmin)
+├── DEMO_MVP.md               # Script narratif pour présentation du projet
+├── KEYCLOAK_SETUP.md         # Documentation pour la configuration du SSO
+└── README.md                 # Documentation principale
 ```
 
-### Backend (.env)
-```env
-PORT=3001
-NODE_ENV=development
-FRONTEND_URL=http://localhost:3000
-```
+## 👥 Équipe Projet
+- **Développement Fullstack & UI/UX** : Dana Benadel
+- **Supervision SI & Contexte Métier** : Amrane Alik (GenericLab)
 
-## 🌟 Fonctionnalités
-
-- ✅ **Dashboard interactif** - Vue d'ensemble avec statistiques en temps réel
-- ✅ **Gestion des CAPA** - Création, modification, suppression des actions
-- ✅ **Gestion des utilisateurs** - Administration des comptes
-- ✅ **Authentification** - Système de connexion sécurisé
-- ✅ **API REST** - Backend découplé avec Express.js
-- ✅ **Interface moderne** - Design responsive avec Tailwind CSS
-- ✅ **Navigation fluide** - Routing automatique avec Nuxt
-
-## 🛠️ Scripts disponibles
-
-### Frontend
-```bash
-npm run dev      # Démarrage en mode développement
-npm run build    # Build pour la production
-npm run generate # Génération statique
-npm run preview  # Preview du build de production
-```
-
-### Backend
-```bash
-npm run dev      # Démarrage avec nodemon
-npm start        # Démarrage en production
-```
-
-## 📦 Déploiement
-
-### Frontend (Vercel)
-Le frontend peut être déployé sur Vercel :
-```bash
-cd frontend
-npm run build
-```
-
-### Backend (Heroku, Railway, etc.)
-Le backend peut être déployé sur n'importe quel service supportant Node.js :
-```bash
-cd backend
-npm start
-```
-
-## 🔜 Prochaines étapes
-
-- [ ] Intégration d'une vraie base de données (PostgreSQL/MongoDB)
-- [ ] Authentification JWT complète
-- [ ] Gestion des rôles et permissions
-- [ ] Upload de fichiers pour les CAPA
-- [ ] Notifications en temps réel
-- [ ] Export de rapports (PDF, Excel)
-- [ ] Tests unitaires et d'intégration
-
-## Contribution
-
-Les contributions sont les bienvenues ! Pour contribuer :
-
-1. Forkez le projet
-2. Créez une branche pour votre fonctionnalité (\`git checkout -b feature/AmazingFeature\`)
-3. Committez vos changements (\`git commit -m 'Add some AmazingFeature'\`)
-4. Poussez vers la branche (\`git push origin feature/AmazingFeature\`)
-5. Ouvrez une Pull Request
-
-## Support
-
-Pour toute question ou problème, veuillez ouvrir une issue sur le repository GitHub.
-
-## Licence
-
-Ce projet est privé et destiné à un usage interne.
+*(Projet réalisé entre le 18 Septembre 2025 et le 22 Février 2026)*

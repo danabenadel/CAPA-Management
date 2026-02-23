@@ -151,6 +151,94 @@ async function main() {
     });
   }
 
+  // ---------------------------------------------------------------------------
+  // 5. Fake Data for Dashboard (Events, CAPAs)
+  // ---------------------------------------------------------------------------
+  console.log('Seeding Fake CAPA Data...');
+  const qaUser = await prisma.user.findFirst({ where: { email: 'qa@genericlab.com' } });
+
+  // 1. Un Evénement Qualité (Déviation)
+  const event1 = await prisma.qualityEvent.upsert({
+    where: { eventNumber: 'EV-2026-001' },
+    update: {},
+    create: {
+      eventNumber: 'EV-2026-001',
+      eventDate: new Date(),
+      reporterUserId: qaUser.id,
+      problemDescription: 'Température hors limite dans le sas de production (27°C au lieu de 22°C).',
+      problemLocation: 'Sas Production 1',
+      affectedProcess: 'Fabrication',
+      status: 'CLOTURE', // Pour pouvoir lier une CAPA
+    },
+  });
+
+  // 1. Une CAPA active
+  const capa1 = await prisma.capa.upsert({
+    where: { capaNumber: 'CAPA-2026-001' },
+    update: {},
+    create: {
+      capaNumber: 'CAPA-2026-001',
+      eventId: event1.id,
+      initiationDate: new Date(),
+      initiatorUserId: qaUser.id,
+      openingReason: 'Déviation de température récurrente dans le sas.',
+      rootCause: 'Défaillance du capteur de régulation de la centrale de traitement d\'air.',
+      status: 'EN_COURS',
+      totalActions: 2,
+      completedActions: 1,
+    }
+  });
+
+  // Actions pour CAPA 1
+  await prisma.capaAction.upsert({
+    where: { id: 9991 }, // Just a fake ID placeholder if needed, or use a distinct find
+    // Since id is autoincrement, let's use a try/catch or just create if we assume clean DB
+    update: {},
+    create: {
+      capaId: capa1.id,
+      actionReference: 'ACT-001',
+      actionDescription: 'Remplacement immédiat du capteur.',
+      actionType: 'CORRECTIVE',
+      plannedClosureDate: new Date(),
+      responsibleUserId: qaUser.id,
+      status: 'TERMINEE',
+      actualClosureDate: new Date()
+    }
+  }).catch(() => { });
+
+  await prisma.capaAction.upsert({
+    where: { id: 9992 },
+    update: {},
+    create: {
+      capaId: capa1.id,
+      actionReference: 'ACT-002',
+      actionDescription: 'Mise en place d\'une maintenance préventive trimestrielle du système CVC.',
+      actionType: 'PREVENTIVE',
+      plannedClosureDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // + 15 days
+      responsibleUserId: qaUser.id,
+      status: 'PLANIFIEE'
+    }
+  }).catch(() => { });
+
+
+  // 2. Une CAPA terminée
+  const capa2 = await prisma.capa.upsert({
+    where: { capaNumber: 'CAPA-2026-002' },
+    update: {},
+    create: {
+      capaNumber: 'CAPA-2026-002',
+      initiationDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+      initiatorUserId: qaUser.id,
+      openingReason: 'Erreur d\'étiquetage sur le lot A123.',
+      rootCause: 'Mauvaise configuration de l\'imprimante thermique par l\'opérateur.',
+      status: 'CLOTURE',
+      totalActions: 1,
+      completedActions: 1,
+      closureDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      closedByUserId: qaUser.id
+    }
+  });
+
   console.log('Seeding finished.');
 }
 
